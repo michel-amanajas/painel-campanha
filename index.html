@@ -3433,13 +3433,8 @@ async function dbClienteTemp(){
 }
 function senhaAleatoria(){ const a = new Uint8Array(20); crypto.getRandomValues(a); return Array.from(a, b => b.toString(36).padStart(2, '0')).join('') + 'Aa1!'; }
 async function usReenviarConvite(u){
-  if(!dbOn()) return { ok:false, aviso:true, msg:'O envio de e-mail só funciona depois que o login por banco de dados estiver ativo.' };
-  try {
-    const t = await dbClienteTemp();
-    let r = await t.auth.resend({ type:'signup', email:u.email, options:{ emailRedirectTo:conviteUrl() } });
-    if(r.error){ r = await t.auth.resetPasswordForEmail(u.email, { redirectTo:conviteUrl() }); if(r.error) throw r.error; }
-    return { ok:true, msg:'E-mail enviado para ' + u.email + '.' };
-  } catch(e){ return { ok:false, msg:'Não foi possível enviar o e-mail: ' + (e.message || e) }; }
+  // Se a conta ainda não existe no Supabase, cria (signUp); se já existe, o Supabase reenvia o e-mail adequado.
+  return usEnviarConvite({ nome:u.nome, email:u.email, papel:u.papel, meta:u.meta });
 }
 async function usEnviarConvite(reg){
   if(!dbOn()) return { ok:false, aviso:true, msg:'Usuário criado. O e-mail de convite só é enviado quando o login por banco de dados estiver ativo.' };
@@ -3462,7 +3457,12 @@ async function usEnviarConvite(reg){
       const x = await t.auth.resetPasswordForEmail(reg.email, { redirectTo:conviteUrl() }); if(x.error) throw x.error;
     }
     return { ok:true, msg:'Convite enviado para ' + reg.email + '.' };
-  } catch(e){ return { ok:false, msg:'Usuário salvo, mas o convite não foi enviado: ' + (e.message || e) }; }
+  } catch(e){
+    const m = String(e.message || e);
+    const dica = /rate limit|too many|seconds/i.test(m) ? ' O limite de e-mails do Supabase foi atingido: aguarde cerca de 1 hora ou configure um SMTP próprio.'
+      : /not authorized|not allowed/i.test(m) ? ' O e-mail padrão do Supabase só entrega para membros da sua equipe: configure um SMTP próprio (Authentication › SMTP Settings).' : '';
+    return { ok:false, msg:'O convite não foi enviado: ' + m + '.' + dica };
+  }
 }
 
 // ---- tela inicial do líder
