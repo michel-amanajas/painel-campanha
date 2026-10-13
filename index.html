@@ -2048,10 +2048,13 @@ function truncateText(ctx, text, maxWidth){
   }
   var BASE_IDS = ['statusApoiadoresData','liderMetaData','apoiadoresPorLiderData','userReportsData','hierarchyTreeData'];
   var CKEY = 'painel_db_cache';
+  var AREA = window.PAINEL_AREA === 'admin' ? 'admin' : 'usuario';
+  function areaOk(p){ var adm = p === 'administrador' || p === 'coordenador'; return AREA === 'admin' ? adm : !adm; }
+  if(AREA === 'admin') document.title = 'Administrador · Painel de Campanha';
   var CONV = /[?&]convite=1/.test(location.search) || /type=(signup|recovery|invite|magiclink)/.test(location.hash);
   var CONV_ERR = /error_code=|error=access_denied/.test(location.hash);
   if(CONV || CONV_ERR){ try { sessionStorage.removeItem(CKEY); } catch(e){} }
-  try { var c = JSON.parse(sessionStorage.getItem(CKEY) || 'null'); if(c && c.perfil) { DB.cache = c; DB.perfil = c.perfil; DB.ready = true; } } catch(e){}
+  try { var c = JSON.parse(sessionStorage.getItem(CKEY) || 'null'); if(c && c.perfil && areaOk(c.perfil.papel)) { DB.cache = c; DB.perfil = c.perfil; DB.ready = true; } else if(c && c.perfil) { sessionStorage.removeItem(CKEY); } } catch(e){}
   if(DB.ready){
     BASE_IDS.forEach(function(id){
       var el = document.getElementById(id); if(!el) return;
@@ -2074,6 +2077,13 @@ function truncateText(ctx, text, maxWidth){
     var d = document.createElement('div'); d.id = 'dbLogin';
     d.innerHTML = '<form id="dbLoginForm" novalidate><h1>Painel de Campanha</h1><p>Entre com seu e-mail e senha.</p><label for="dbEmail">E-mail</label><input id="dbEmail" type="email" autocomplete="username"><label for="dbSenha">Senha</label><input id="dbSenha" type="password" autocomplete="current-password"><button type="submit" id="dbEntrar">Entrar</button><div id="dbLoginMsg" role="alert"></div></form>';
     document.body.appendChild(d);
+    (function(){
+      var h1 = d.querySelector('h1'), pp = d.querySelector('p'), b = document.createElement('div');
+      b.style.cssText = 'display:inline-block;font-size:11px;font-weight:700;letter-spacing:.06em;padding:4px 10px;border-radius:999px;margin-bottom:10px;color:#fff;background:' + (AREA === 'admin' ? '#1e293b' : '#059669');
+      if(AREA === 'admin'){ b.textContent = 'ÁREA DO ADMINISTRADOR'; h1.textContent = 'Painel do Administrador'; pp.textContent = 'Acesso restrito à administração e à coordenação da campanha.'; }
+      else { b.textContent = 'ÁREA DO USUÁRIO'; h1.textContent = 'Painel do Líder'; pp.textContent = 'Acesso dos líderes e usuários da campanha. Entre com seu e-mail e senha.'; }
+      h1.parentNode.insertBefore(b, h1);
+    })();
     var msg = function(t, ok){ var m = document.getElementById('dbLoginMsg'); m.textContent = t; m.style.color = ok ? '#13783b' : '#b42323'; };
     function carregarLib(){
       return new Promise(function(res, rej){
@@ -2097,6 +2107,10 @@ function truncateText(ctx, text, maxWidth){
       if(p.error) throw p.error;
       if(!p.data || !p.data.ativo) throw new Error('Seu login existe, mas ainda não tem perfil ativo. Peça ao administrador.');
       var perfil = { id:p.data.id, nome:p.data.nome, papel:p.data.papel, meta:p.data.meta };
+      if(!areaOk(perfil.papel)){
+        try { await DB.client.auth.signOut(); } catch(e){}
+        throw new Error(AREA === 'admin' ? 'Esta é a área do administrador. Os líderes e usuários entram pela página de usuários.' : 'Este login é de administrador ou coordenador. Entre pela página do administrador (admin.html).');
+      }
       var pode = perfil.papel === 'administrador' || perfil.papel === 'coordenador';
       var cache = { perfil:perfil, base:{}, apoiadores:[], usuarios:[], revogados:[], segmentos:[], importacoes:[] };
       var ap = await todas('apoiadores'); cache.apoiadores = ap.map(function(r){ return r.dados; });
@@ -3348,7 +3362,7 @@ function upLigar(){
     const k = usPerfilKey, rev = usRev(), era = rev.has(k);
     era ? rev.delete(k) : rev.add(k); usRevSave(rev); usHistAdd(k, era ? 'Acesso restaurado' : 'Acesso revogado'); renderUsPerfil();
   };
-  $('upConvite').onclick = () => upCopiar(location.href.split('#')[0].split('?')[0], 'Link do painel copiado.');
+  $('upConvite').onclick = () => upCopiar(urlUsuarios(), 'Link de acesso dos usuários copiado.');
   $('upReenviar').onclick = async () => {
     const u = upUsuario(); if(!u) return;
     if(!u.email) return avisoTela('Este usuário não tem e-mail cadastrado. Use "Editar" para informar.', 'erro');
@@ -3360,7 +3374,7 @@ function upLigar(){
   $('upSenha').onclick = async () => {
     const u = upUsuario(); if(!u || !u.email){ avisoTela('Este usuário não tem e-mail cadastrado. Use "Editar" para informar.', 'erro'); return; }
     if(!dbOn()){ avisoTela('Redefinir senha só funciona depois que o login por banco de dados estiver ativo.', 'erro'); return; }
-    try { const c = await dbCliente(); const r = await c.auth.resetPasswordForEmail(u.email, { redirectTo:location.href.split('#')[0].split('?')[0] + '?convite=1' }); if(r.error) throw r.error; usHistAdd(usPerfilKey, 'Redefinição de senha enviada'); avisoTela('E-mail de redefinição enviado para ' + u.email + '.'); renderUsPerfil(); }
+    try { const c = await dbCliente(); const r = await c.auth.resetPasswordForEmail(u.email, { redirectTo:conviteUrl() }); if(r.error) throw r.error; usHistAdd(usPerfilKey, 'Redefinição de senha enviada'); avisoTela('E-mail de redefinição enviado para ' + u.email + '.'); renderUsPerfil(); }
     catch(e){ avisoTela('Não foi possível enviar: ' + (e.message || e), 'erro'); }
   };
   $('upRemover').onclick = () => { const u = upUsuario(); if(!u) return;
@@ -3446,7 +3460,8 @@ function renderUsPerm(){
 // ============================================================
 var LIDER_OK = ['geral', 'ap-todos', 'ap-novo', 'ap-mapa', 'ap-seg', 'ap-seg-novo'];
 function ehLider(){ return !!(window.__DB && __DB.perfil && __DB.perfil.papel === 'lider' && __DB.ready); }
-const conviteUrl = () => location.href.split('#')[0].split('?')[0] + '?convite=1';
+function urlUsuarios(){ return location.href.split('#')[0].split('?')[0].replace(/\/?admin(\.html)?$/, '/').replace(/\/index\.html$/, '/'); }
+const conviteUrl = () => urlUsuarios() + '?convite=1';
 async function dbClienteTemp(){
   await dbCliente();
   return window.supabase.createClient(__DB.cfg.SUPABASE_URL, __DB.cfg.SUPABASE_ANON_KEY, { auth:{ persistSession:false, autoRefreshToken:false, detectSessionInUrl:false } });
