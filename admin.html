@@ -1911,7 +1911,11 @@ function truncateText(ctx, text, maxWidth){
     <div class="panel no-print" id="dbAdminPanel" style="display:none; margin-top:16px;">
       <h3 style="margin-top:0;">Banco de dados</h3>
       <p class="muted" style="font-size:13.5px; line-height:1.6; margin:0 0 12px;">Envia os relatórios que estão carregados neste painel (líderes, apoiadores, hierarquia e performance) para o banco. Só o administrador pode fazer isso. Depois disso, o arquivo publicado no GitHub não precisa mais conter esses dados.</p>
-      <button class="us-btn us-btn--primary" type="button" id="dbEnviarBase">Enviar base para o banco</button>
+      <p class="muted" style="font-size:13px; margin:0 0 10px;"><b>1.</b> Escolha o arquivo <b>painel_campanha_completo.html</b> (o que fica no seu computador, com os dados). <b>2.</b> Clique em enviar.</p>
+      <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:center;">
+        <label class="us-btn" for="dbBaseArquivo" style="cursor:pointer">Escolher arquivo…</label><input type="file" id="dbBaseArquivo" accept=".html,text/html" hidden><span id="dbBaseNome" class="muted" style="font-size:13px">Nenhum arquivo escolhido</span>
+        <button class="us-btn us-btn--primary" type="button" id="dbEnviarBase">Enviar base para o banco</button>
+      </div>
       <div class="status-msg" id="dbEnviarMsg" style="margin-top:12px;"></div>
     </div>
   </div>
@@ -2065,7 +2069,8 @@ function truncateText(ctx, text, maxWidth){
     });
     var semBase = !(c.base && c.base.liderMetaData) && (document.getElementById('liderMetaData').textContent.trim().length <= 2);
     if(semBase && c.perfil.papel !== 'lider') document.addEventListener('DOMContentLoaded', function(){
-      faixa(c.perfil.papel === 'lider' ? 'Você vê apenas os seus apoiadores. A base geral não está liberada para o perfil de líder.' : 'A base ainda não foi enviada ao banco. Abra o painel_campanha_completo.html no seu computador, entre como administrador e use Atualizar dados > Enviar base para o banco.', '#b26a00');
+      var fx = faixa('A base ainda não foi enviada ao banco. Clique aqui para enviar: Atualizar dados › Enviar base para o banco (escolha o arquivo painel_campanha_completo.html).', '#b26a00');
+      fx.style.cursor = 'pointer'; fx.addEventListener('click', function(){ fx.remove(); if(typeof switchTab === 'function') switchTab('atualizar'); });
     });
     return;
   }
@@ -4328,16 +4333,28 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('accPapel').textContent = papeis[pf.papel] || pf.papel;
   if(pf.papel === 'administrador'){
     document.getElementById('dbAdminPanel').style.display = '';
+    document.getElementById('dbBaseArquivo').addEventListener('change', e => { document.getElementById('dbBaseNome').textContent = e.target.files[0] ? e.target.files[0].name : 'Nenhum arquivo escolhido'; });
     document.getElementById('dbEnviarBase').addEventListener('click', async () => {
       const el = document.getElementById('dbEnviarMsg'), btn = document.getElementById('dbEnviarBase');
       const ids = ['statusApoiadoresData','liderMetaData','apoiadoresPorLiderData','userReportsData','hierarchyTreeData'];
-      const rows = []; 
-      for(const id of ids){ try { const dados = JSON.parse(document.getElementById(id).textContent); if(dados && Object.keys(dados).length) rows.push({ chave:id, dados, atualizado_em:new Date().toISOString() }); } catch(e){} }
-      if(!rows.length) return setStatus(el, 'error', 'Não há dados carregados para enviar.');
+      const rows = [], arq = document.getElementById('dbBaseArquivo').files[0];
+      let fonte = null;
+      if(arq){ try { fonte = await arq.text(); } catch(e){ return setStatus(el, 'error', 'Não consegui ler o arquivo escolhido.'); } }
+      for(const id of ids){
+        try {
+          let txt;
+          if(fonte !== null){ const m = fonte.match(new RegExp('<script[^>]*id="' + id + '"[^>]*>([\\s\\S]*?)<' + '/script>')); txt = m ? m[1] : ''; }
+          else txt = document.getElementById(id).textContent;
+          const dados = JSON.parse(txt); if(dados && Object.keys(dados).length) rows.push({ chave:id, dados, atualizado_em:new Date().toISOString() });
+        } catch(e){}
+      }
+      if(!rows.length) return setStatus(el, 'error', arq ? 'O arquivo escolhido não contém os dados da campanha. Escolha o painel_campanha_completo.html.' : 'Não há dados carregados. Clique em "Escolher arquivo…" e selecione o painel_campanha_completo.html.');
       btn.disabled = true; setStatus(el, 'warn', 'Enviando...');
       try {
         for(const r of rows){ const x = await (await dbCliente()).from('base_dados').upsert(r, { onConflict:'chave' }); if(x.error) throw x.error; }
-        setStatus(el, 'ok', `Base enviada ao banco (${rows.length} conjuntos de dados).`);
+        __DB.cache.base = __DB.cache.base || {}; rows.forEach(r => { __DB.cache.base[r.chave] = r.dados; }); dbPersist();
+        setStatus(el, 'ok', `Base enviada ao banco (${rows.length} conjuntos de dados). Recarregando...`);
+        setTimeout(() => location.reload(), 1200); return;
       } catch(e){ setStatus(el, 'error', 'Falha ao enviar: ' + (e.message || e)); }
       btn.disabled = false;
     });
