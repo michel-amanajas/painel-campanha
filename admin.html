@@ -1092,6 +1092,36 @@ function truncateText(ctx, text, maxWidth){
   #vlLista{margin-bottom:6px}
   /* a tela Atualizar dados saiu do menu; só o painel do banco continua acessível (pela faixa de aviso) */
   #tabAtualizar > :not(#dbAdminPanel){display:none !important}
+
+  /* ===== Fase 2: menu em blocos, cabeçalho único, formulários, lote ===== */
+  .menu-section{font-size:12px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); padding:14px 14px 4px}
+  body:not(.papel-lider) .menu-soon{display:none}
+  body.papel-lider .menu-section, body.papel-lider [data-group="rel"], body.papel-lider [data-group="ferramentas"], body.papel-lider #tabBtnNovidades{display:none !important}
+  .masthead{border-bottom:0; padding-bottom:0; margin-bottom:18px; align-items:flex-start}
+  .masthead h1{font-size:24px; font-weight:700; letter-spacing:-.01em}
+  .pg-acoes{display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:flex-end}
+  .pg-mais{position:relative; display:inline-block}
+  .pg-mais summary{list-style:none; cursor:pointer; display:inline-flex; align-items:center; gap:6px; min-height:36px; padding:0 14px; border:1px solid var(--line); border-radius:999px; background:var(--panel); color:var(--text); font-size:13px; font-weight:600}
+  .pg-mais summary::-webkit-details-marker{display:none}
+  .pg-mais summary:hover{background:var(--panel-2)}
+  .nv-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:14px}
+  .nv-card{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px 18px}
+  .nv-card small{display:block; font-size:12px; color:var(--muted); letter-spacing:.04em; text-transform:uppercase; margin-bottom:6px}
+  .nv-card h3{margin:0 0 6px; font-size:15px}
+  .nv-card p{margin:0; font-size:13.5px; color:var(--muted); line-height:1.5}
+  .campo-erro{border-color:#dc2626 !important}
+  .campo-msg{color:#b91c1c; font-size:12.5px; margin-top:4px; display:flex; gap:6px; align-items:flex-start; line-height:1.4}
+  .step-resumo{border:1px solid #fca5a5; background:#fef2f2; color:#991b1b; border-radius:12px; padding:12px 16px; margin-bottom:14px; font-size:13.5px; line-height:1.5}
+  .rascunho-aviso{display:flex; align-items:center; justify-content:space-between; gap:12px; border:1px solid #93c5fd; background:#eff6ff; color:#1e40af; border-radius:12px; padding:10px 16px; margin-bottom:14px; font-size:13.5px}
+  .rascunho-aviso button{background:none; border:0; color:inherit; font:inherit; font-weight:600; text-decoration:underline; cursor:pointer; min-height:36px}
+  .lote-bar{position:sticky; top:8px; z-index:15; display:flex; flex-wrap:wrap; align-items:center; gap:8px; background:var(--panel); border:1px solid var(--accent); border-radius:12px; padding:10px 14px; margin:0 0 12px; box-shadow:0 6px 18px rgba(15,23,42,.12)}
+  .lote-bar[hidden]{display:none}
+  .lote-bar b{margin-right:6px; font-size:13.5px}
+  .lote-seg{display:inline-flex; gap:6px; align-items:center}
+  .lote-seg .filter-select{min-width:0; width:170px; padding:6px 10px}
+  .vg-vazio .us-btn{margin-top:8px}
+  .vg-vazio p{margin:0}
+  .ap-filters[hidden], .us-filtros[hidden]{display:none !important}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 </head>
@@ -1111,19 +1141,8 @@ function truncateText(ctx, text, maxWidth){
       </button>
     </div>
     <div class="sidebar-menu" id="sidebarMenu">
+      <div class="menu-section" role="presentation">Campanha</div>
       <button class="menu-item" id="tabBtnGeral" type="button" data-tab="geral" onclick="switchTab('geral')"><svg class="mi-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21.2 15.9A10 10 0 1 1 8 2.8"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg><span class="mi-label">Visão geral</span></button>
-      <div class="menu-group" data-group="usuarios">
-        <button class="menu-item menu-parent" type="button" aria-expanded="false" aria-controls="sub-usuarios" onclick="toggleMenuGroup('usuarios')"><svg class="mi-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span class="mi-label">Usuários</span><svg class="mi-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
-        <div class="submenu" id="sub-usuarios" hidden>
-          <button class="submenu-item" id="tabBtnUsTodos" type="button" data-tab="us-todos" onclick="switchTab('us-todos')"><svg class="si-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 21a8 8 0 0 0-16 0"/><circle cx="10" cy="8" r="5"/><path d="M22 20c0-3.4-2-6.5-4-8a5 5 0 0 0-.45-8.3"/></svg><span class="si-label">Ver todos</span></button>
-          <button class="submenu-item" id="tabBtnUsNovo" type="button" data-tab="us-novo" onclick="switchTab('us-novo')"><svg class="si-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M12 5v14"/></svg><span class="si-label">Novo usuário</span></button>
-          <button class="submenu-item" id="tabBtnUsMapa" type="button" data-tab="us-mapa" onclick="switchTab('us-mapa')"><svg class="si-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3z"/><path d="M9 3v15M15 6v15"/></svg><span class="si-label">Mapa de usuários</span></button>
-          <button class="submenu-item" id="tabBtnUsHier" type="button" data-tab="us-hier" onclick="switchTab('us-hier')"><svg class="si-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v16M7 4l-3 3M7 4l3 3M17 20V4M17 20l-3-3M17 20l3-3"/></svg><span class="si-label">Hierarquia</span></button>
-          <button class="submenu-item" id="tabBtnUsRank" type="button" data-tab="us-rank" onclick="switchTab('us-rank')"><svg class="si-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9H4a2 2 0 0 1-2-2V5h4M18 9h2a2 2 0 0 0 2-2V5h-4M6 3h12v6a6 6 0 0 1-12 0zM12 15v4M8 21h8"/></svg><span class="si-label">Ranking de líderes</span></button>
-          <button class="submenu-item" id="tabBtnUsuario" type="button" data-tab="usuario" onclick="switchTab('usuario')"><svg class="si-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span class="si-label">Buscar um líder</span></button>
-          <button class="submenu-item" id="tabBtnPerformance" type="button" data-tab="performance" onclick="switchTab('performance')"><svg class="si-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg><span class="si-label">Performance de liderança</span></button>
-        </div>
-      </div>
       <div class="menu-group" data-group="apoiadores">
         <button class="menu-item menu-parent" type="button" aria-expanded="false" aria-controls="sub-apoiadores" onclick="toggleMenuGroup('apoiadores')"><svg class="mi-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 21a8 8 0 0 0-16 0"/><circle cx="10" cy="8" r="5"/><path d="M22 20c0-3.4-2-6.5-4-8a5 5 0 0 0-.45-8.3"/></svg><span class="mi-label">Apoiadores</span><svg class="mi-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
         <div class="submenu" id="sub-apoiadores" hidden>
@@ -1131,19 +1150,47 @@ function truncateText(ctx, text, maxWidth){
           <button class="submenu-item" id="tabBtnApNovo" type="button" data-tab="ap-novo" onclick="switchTab('ap-novo')"><svg class="si-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M12 5v14"/></svg><span class="si-label">Novo apoiador</span></button>
           <button class="submenu-item" id="tabBtnApMapa" type="button" data-tab="ap-mapa" onclick="switchTab('ap-mapa')"><svg class="si-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3z"/><path d="M9 3v15M15 6v15"/></svg><span class="si-label">Mapa de apoiadores</span></button>
           <button class="submenu-item" id="tabBtnApSeg" type="button" data-tab="ap-seg" data-alias="ap-seg-novo" onclick="switchTab('ap-seg')"><svg class="si-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h18l-7 8.5V19l-4 2v-8.5z"/></svg><span class="si-label">Segmentos</span></button>
+        </div>
+      </div>
+      <div class="menu-group" data-group="usuarios">
+        <button class="menu-item menu-parent" type="button" aria-expanded="false" aria-controls="sub-usuarios" onclick="toggleMenuGroup('usuarios')"><svg class="mi-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span class="mi-label">Usuários</span><svg class="mi-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+        <div class="submenu" id="sub-usuarios" hidden>
+          <button class="submenu-item" id="tabBtnUsTodos" type="button" data-tab="us-todos" onclick="switchTab('us-todos')"><svg class="si-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 21a8 8 0 0 0-16 0"/><circle cx="10" cy="8" r="5"/><path d="M22 20c0-3.4-2-6.5-4-8a5 5 0 0 0-.45-8.3"/></svg><span class="si-label">Ver todos</span></button>
+          <button class="submenu-item" id="tabBtnUsNovo" type="button" data-tab="us-novo" onclick="switchTab('us-novo')"><svg class="si-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M12 5v14"/></svg><span class="si-label">Novo usuário</span></button>
+          <button class="submenu-item" id="tabBtnUsMapa" type="button" data-tab="us-mapa" onclick="switchTab('us-mapa')"><svg class="si-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3z"/><path d="M9 3v15M15 6v15"/></svg><span class="si-label">Mapa de usuários</span></button>
+        </div>
+      </div>
+      <button class="menu-item" id="tabBtnRegional" type="button" data-tab="regional" onclick="switchTab('regional')"><svg class="mi-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg><span class="mi-label">Regiões</span></button>
+      <div class="menu-section" role="presentation">Relatórios</div>
+      <div class="menu-group" data-group="rel">
+        <button class="menu-item menu-parent" type="button" aria-expanded="false" aria-controls="sub-rel" onclick="toggleMenuGroup('rel')"><svg class="mi-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3v18h18"/><path d="M7 16v-4M12 16V8M17 16v-7"/></svg><span class="mi-label">Relatórios</span><svg class="mi-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+        <div class="submenu" id="sub-rel" hidden>
+          <button class="submenu-item" id="tabBtnPerformance" type="button" data-tab="performance" onclick="switchTab('performance')"><svg class="si-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg><span class="si-label">Performance de liderança</span></button>
+          <button class="submenu-item" id="tabBtnUsHier" type="button" data-tab="us-hier" onclick="switchTab('us-hier')"><svg class="si-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4v16M7 4l-3 3M7 4l3 3M17 20V4M17 20l-3-3M17 20l3-3"/></svg><span class="si-label">Hierarquia</span></button>
+          <button class="submenu-item" id="tabBtnUsRank" type="button" data-tab="us-rank" onclick="switchTab('us-rank')"><svg class="si-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9H4a2 2 0 0 1-2-2V5h4M18 9h2a2 2 0 0 0 2-2V5h-4M6 3h12v6a6 6 0 0 1-12 0zM12 15v4M8 21h8"/></svg><span class="si-label">Ranking de líderes</span></button>
+          <button class="submenu-item" id="tabBtnUsuario" type="button" data-tab="usuario" onclick="switchTab('usuario')"><svg class="si-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span class="si-label">Buscar um líder</span></button>
+          <button class="submenu-item" id="tabBtnApuracao" type="button" data-tab="apuracao" onclick="switchTab('apuracao')"><svg class="si-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3v18h18"/><path d="M7 16v-4M12 16V8M17 16v-7"/></svg><span class="si-label">Apuração 2026 (AP)</span></button>
+          <button class="submenu-item" type="button" data-alias="votos-municipio" onclick="openVotosMunicipio()"><svg class="si-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg><span class="si-label">Votos por município</span></button>
+        </div>
+      </div>
+      <div class="menu-section" role="presentation">Ferramentas</div>
+      <div class="menu-group" data-group="ferramentas">
+        <button class="menu-item menu-parent" type="button" aria-expanded="false" aria-controls="sub-ferramentas" onclick="toggleMenuGroup('ferramentas')"><svg class="mi-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18v3h3l6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.4-.6-.6-2.4z"/></svg><span class="mi-label">Ferramentas</span><svg class="mi-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+        <div class="submenu" id="sub-ferramentas" hidden>
           <button class="submenu-item" id="tabBtnApImport" type="button" data-tab="ap-import" onclick="switchTab('ap-import')"><svg class="si-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M4 21h16"/></svg><span class="si-label">Importações</span></button>
           <button class="submenu-item" id="tabBtnConversor" type="button" data-tab="conversor" onclick="switchTab('conversor')"><svg class="si-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg><span class="si-label">Conversor PDF → CSV</span></button>
         </div>
       </div>
-      <button class="menu-item" id="tabBtnRegional" type="button" data-tab="regional" onclick="switchTab('regional')"><svg class="mi-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg><span class="mi-label">Regiões</span></button>
-      <div class="menu-group" data-group="comunicacao">
+      <button class="menu-item" id="tabBtnNovidades" type="button" data-tab="novidades" onclick="switchTab('novidades')"><svg class="mi-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z"/></svg><span class="mi-label">Novidades</span></button>
+      <div class="menu-soon">
+<div class="menu-group" data-group="comunicacao">
         <button class="menu-item menu-parent" type="button" aria-expanded="false" aria-controls="sub-comunicacao" onclick="toggleMenuGroup('comunicacao')"><svg class="mi-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span class="mi-label">Comunicação</span><svg class="mi-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
         <div class="submenu" id="sub-comunicacao" hidden>
           <button class="submenu-item" type="button" data-soon="com-msgs" onclick="openSoon('com-msgs')"><svg class="si-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span class="si-label">Mensagens</span><span class="soon-pill">Em breve</span></button>
           <button class="submenu-item" type="button" data-soon="com-aniv" onclick="openSoon('com-aniv')"><svg class="si-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg><span class="si-label">Aniversariantes</span><span class="soon-pill">Em breve</span></button>
         </div>
       </div>
-      <div class="menu-group" data-group="eventos">
+<div class="menu-group" data-group="eventos">
         <button class="menu-item menu-parent" type="button" aria-expanded="false" aria-controls="sub-eventos" onclick="toggleMenuGroup('eventos')"><svg class="mi-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg><span class="mi-label">Eventos</span><svg class="mi-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
         <div class="submenu" id="sub-eventos" hidden>
           <button class="submenu-item" type="button" data-soon="ev-agenda" onclick="openSoon('ev-agenda')"><svg class="si-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg><span class="si-label">Agenda de eventos</span><span class="soon-pill">Em breve</span></button>
@@ -1152,19 +1199,13 @@ function truncateText(ctx, text, maxWidth){
       </div>
       <button class="menu-item" type="button" data-soon="pesquisas" onclick="openSoon('pesquisas')"><svg class="mi-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><circle cx="11.5" cy="14.5" r="2.5"/><path d="M13.3 16.3 15 18"/></svg><span class="mi-label">Pesquisas</span></button>
       <button class="menu-item" type="button" data-soon="relatorios" onclick="openSoon('relatorios')"><svg class="mi-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 18v-3M12 18v-5M16 18v-2"/></svg><span class="mi-label">Relatórios</span></button>
-      <div class="menu-group" data-group="analise">
-        <button class="menu-item menu-parent" type="button" aria-expanded="false" aria-controls="sub-analise" onclick="toggleMenuGroup('analise')"><svg class="mi-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3v18h18"/><path d="M7 16v-4M12 16V8M17 16v-7"/></svg><span class="mi-label">Análise Eleitoral</span><svg class="mi-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
-        <div class="submenu" id="sub-analise" hidden>
-          <button class="submenu-item" id="tabBtnApuracao" type="button" data-tab="apuracao" onclick="switchTab('apuracao')"><svg class="si-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3v18h18"/><path d="M7 16v-4M12 16V8M17 16v-7"/></svg><span class="si-label">Apuração 2026 (AP)</span></button>
-          <button class="submenu-item" type="button" data-alias="votos-municipio" onclick="openVotosMunicipio()"><svg class="si-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg><span class="si-label">Votos por município</span></button>
-        </div>
-      </div>
-      <div class="menu-group" data-group="gabinete">
+<div class="menu-group" data-group="gabinete">
         <button class="menu-item menu-parent" type="button" aria-expanded="false" aria-controls="sub-gabinete" onclick="toggleMenuGroup('gabinete')"><svg class="mi-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4h6v4M8 6h.01M12 6h.01M16 6h.01M8 10h.01M12 10h.01M16 10h.01M8 14h.01M12 14h.01M16 14h.01"/></svg><span class="mi-label">Gabinete Virtual</span><svg class="mi-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
         <div class="submenu" id="sub-gabinete" hidden>
           <button class="submenu-item" type="button" data-soon="gab-demandas" onclick="openSoon('gab-demandas')"><svg class="si-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg><span class="si-label">Demandas do gabinete</span><span class="soon-pill">Em breve</span></button>
           <button class="submenu-item" type="button" data-soon="gab-docs" onclick="openSoon('gab-docs')"><svg class="si-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg><span class="si-label">Ofícios e documentos</span><span class="soon-pill">Em breve</span></button>
         </div>
+      </div>
       </div>
       <button class="menu-item" type="button" id="menuSair" onclick="clicouSair()"><svg class="mi-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5M21 12H9"/></svg><span class="mi-label">Sair</span></button>
     </div>
@@ -1208,6 +1249,7 @@ function truncateText(ctx, text, maxWidth){
         <div><div class="vg-k">Atrasadas</div><div class="vg-gab-n" id="vgGabAtrasadas">0</div></div>
         <div><div class="vg-k">Comentários pendentes</div><div class="vg-gab-n" id="vgGabComent">0</div></div>
       </div>
+      <div class="vg-vazio"><p>Nenhuma demanda registrada. O Gabinete Virtual ainda está em desenvolvimento.</p><button type="button" class="us-btn" onclick="switchTab('novidades')">Ver novidades</button></div>
     </section>
 
     <div class="vg-row2">
@@ -1510,6 +1552,11 @@ function truncateText(ctx, text, maxWidth){
         <label class="filter-label">Líder responsável<input type="search" id="apLider" class="filter-select" list="apLiderList" placeholder="Nome do líder..." autocomplete="off"></label>
         <button class="ur-btn" type="button" id="apLimpar">Limpar filtros</button>
       </div>
+      <div class="lote-bar no-print" id="apLoteBar" hidden role="region" aria-label="Ações em lote"><b id="apLoteN"></b>
+        <button class="us-btn" type="button" id="apLoteExp">Exportar</button>
+        <span class="lote-seg"><select id="apLoteSeg" class="filter-select" aria-label="Novo segmento"></select><button class="us-btn" type="button" id="apLoteSegBtn">Mudar segmento</button></span>
+        <button class="us-btn" type="button" id="apLoteCopiar">Copiar WhatsApps</button>
+        <button class="us-btn" type="button" id="apLoteLimpar">Limpar seleção</button></div>
       <div id="apTodosResumo" class="muted" style="font-size:13px; margin:12px 4px;"></div>
       <div style="overflow-x:auto;"><table class="us-table" id="apTodosTabela"></table></div>
       <div class="ap-pager no-print" id="apTodosPager"></div>
@@ -1777,6 +1824,11 @@ function truncateText(ctx, text, maxWidth){
       <div id="umSem" class="vg-note" style="display:none"></div>
       <div style="overflow-x:auto; margin-top:14px;"><table class="apuracao-table" id="usMapaTabela"></table></div>
     </section>
+  </div>
+
+  <div id="tabNovidades" class="tabpanel" style="display:none">
+    <div class="masthead"><div><h1>Novidades</h1><p class="muted" style="margin:6px 0 0; font-size:14px;">Funcionalidades em desenvolvimento. Elas aparecem no menu assim que ficarem prontas.</p></div></div>
+    <div id="nvLista" class="nv-grid"></div>
   </div>
 
   <div id="tabUsPerfil" class="tabpanel" style="display:none">
@@ -3094,7 +3146,7 @@ function vgGrafico(D){
   pts.forEach((p, i) => { s += '<circle cx="'+p[0]+'" cy="'+p[1]+'" r="3" fill="#3b6fd8"><title>'+String(D.dias[i].d.getDate()).padStart(2,'0')+'/'+String(D.dias[i].d.getMonth()+1).padStart(2,'0')+': '+dados[i]+' cadastro(s)</title></circle>'; });
   box.innerHTML = s + '</svg>';
   const nota = vgEl('vgChartNote');
-  if(!D.datados){ nota.style.display = ''; nota.textContent = 'A base importada não traz a data de cadastro de cada apoiador. Os novos cadastros feitos neste painel passam a aparecer aqui automaticamente.'; }
+  if(!D.datados){ nota.style.display = ''; nota.innerHTML = '<p style="margin:0">A base importada não traz a data de cadastro de cada apoiador. Os novos cadastros feitos neste painel passam a aparecer aqui automaticamente.</p><button type="button" class="us-btn us-btn--primary" style="margin-top:8px" onclick="switchTab(\'ap-novo\')">Cadastrar apoiador</button>'; }
   else nota.style.display = 'none';
 }
 
@@ -3122,16 +3174,16 @@ function vgListas(D){
   const nomesLocais = new Set(locais.map(a => personKey(a.nome)));
   const base = D.lista.filter(a => !nomesLocais.has(personKey(a.nome))).reverse();
   const ult = locais.map(a => ({ nome:fmtNome(a.nome), sub:a.email || (a.lider ? 'Líder: ' + fmtNome(a.lider) : '') })).concat(base.map(a => ({ nome:fmtNome(a.nome), sub:a.lider ? 'Líder: ' + fmtNome(a.lider) : '' }))).slice(0, 6);
-  vgEl('vgUltimos').innerHTML = ult.length ? ult.map(a => vgItem('<div class="vg-item-b"><div class="vg-item-n">'+escapeHtml(a.nome)+'</div>'+(a.sub ? '<div class="vg-item-s">'+escapeHtml(a.sub)+'</div>' : '')+'</div>', '<a href="#" class="vg-link" onclick="switchTab(\'ap-todos\');return false;">Ver</a>')).join('') : '<div class="vg-vazio">Nenhum apoiador cadastrado.</div>';
+  vgEl('vgUltimos').innerHTML = ult.length ? ult.map(a => vgItem('<div class="vg-item-b"><div class="vg-item-n">'+escapeHtml(a.nome)+'</div>'+(a.sub ? '<div class="vg-item-s">'+escapeHtml(a.sub)+'</div>' : '')+'</div>', '<a href="#" class="vg-link" onclick="switchTab(\'ap-todos\');return false;">Ver</a>')).join('') : '<div class="vg-vazio"><p>Nenhum apoiador cadastrado ainda.</p><button type="button" class="us-btn us-btn--primary" onclick="switchTab(\'ap-novo\')">Cadastrar apoiador</button></div>';
 
-  vgEl('vgEventos').innerHTML = '<div class="vg-vazio">' + (D.eventos ? fmtI(D.eventos) + ' evento(s) registrado(s) na base. A agenda detalhada ainda não foi importada.' : 'Nenhum evento cadastrado.') + '</div>';
+  vgEl('vgEventos').innerHTML = '<div class="vg-vazio"><p>' + (D.eventos ? fmtI(D.eventos) + ' evento(s) registrado(s) na base. A agenda detalhada ainda não foi importada.' : 'Nenhum evento cadastrado. A agenda de eventos ainda está em desenvolvimento.') + '</p><button type="button" class="us-btn" onclick="switchTab(\'novidades\')">Ver novidades</button></div>';
 
   const mes = new Date().getMonth() + 1, aniv = [];
   const ler = (nome, nasc) => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(nasc || ''); if(m && +m[2] === mes) aniv.push({ nome, dia:+m[3], mes:m[2] }); };
   D.locais.forEach(a => ler(a.nome, a.nascimento));
   try { usLocaisLoad().forEach(u => ler(u.nome, u.nascimento)); } catch(e){}
   aniv.sort((a, b) => a.dia - b.dia);
-  vgEl('vgAniv').innerHTML = aniv.length ? aniv.slice(0, 6).map(a => vgItem('<div class="vg-item-b"><div class="vg-item-n">'+escapeHtml(a.nome)+'</div><div class="vg-item-s">'+String(a.dia).padStart(2,'0')+'/'+a.mes+'</div></div>', '<a href="#" class="vg-link" onclick="openSoon(\'com-aniv\');return false;">Ver</a>')).join('') : '<div class="vg-vazio">Nenhum aniversariante cadastrado neste mês. A base importada não traz data de nascimento.</div>';
+  vgEl('vgAniv').innerHTML = aniv.length ? aniv.slice(0, 6).map(a => vgItem('<div class="vg-item-b"><div class="vg-item-n">'+escapeHtml(a.nome)+'</div><div class="vg-item-s">'+String(a.dia).padStart(2,'0')+'/'+a.mes+'</div></div>', '<a href="#" class="vg-link" onclick="openSoon(\'com-aniv\');return false;">Ver</a>')).join('') : '<div class="vg-vazio"><p>Nenhum aniversariante neste mês. A base importada não traz data de nascimento; informe a data ao cadastrar apoiadores.</p><button type="button" class="us-btn" onclick="switchTab(\'ap-novo\')">Cadastrar apoiador</button></div>';
 }
 
 // ---- mapa ----
@@ -3601,6 +3653,169 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
+
+// ============================================================
+// FASE 2: Novidades, cabeçalho único, validação, rascunho, lote
+// ============================================================
+function renderNovidades(){
+  const ocultas = ['ev-visao', 'ev-compar', 'ev-mapa'];
+  const grupos = {};
+  Object.keys(SOON_PAGES).filter(k => ocultas.indexOf(k) < 0).forEach(k => { const p = SOON_PAGES[k]; (grupos[p.grupo] = grupos[p.grupo] || []).push(p); });
+  document.getElementById('nvLista').innerHTML = Object.keys(grupos).map(g => grupos[g].map(p => '<div class="nv-card"><small>' + escapeHtml(g) + ' · em breve</small><h3>' + escapeHtml(p.titulo) + '</h3><p>' + escapeHtml(p.desc) + '</p></div>').join('')).join('');
+}
+
+// ---- cabeçalho único: ação principal à direita e o resto no menu "Mais"
+function pgMais(botoes){
+  const d = document.createElement('details'); d.className = 'pg-mais up-det no-print';
+  d.innerHTML = '<summary aria-label="Mais ações">Mais ⋯</summary><div class="up-pop"></div>';
+  const pop = d.querySelector('.up-pop');
+  botoes.forEach(b => { b.classList.remove('us-btn', 'ur-btn', 'us-btn--primary'); pop.appendChild(b); });
+  return d;
+}
+function pgCabecalhos(){
+  [['tabApTodos', ['printApTodos', 'exportApTodosCSV'], 'Novo apoiador'], ['tabUsTodos', ['printUsTodos', 'usBtnRevogar'], 'Novo usuário']].forEach(c => {
+    const t = document.getElementById(c[0]); if(!t) return;
+    const mh = t.querySelector('.masthead'), acts = t.querySelector('.us-actions'); if(!mh || !acts) return;
+    const bs = [...acts.querySelectorAll('button')];
+    const prim = bs.find(b => b.classList.contains('us-btn--primary') && b.textContent.trim() === c[2]);
+    const mais = bs.filter(b => b !== prim && !/Filtros/.test(b.textContent));
+    const box = document.createElement('div'); box.className = 'pg-acoes no-print';
+    if(mais.length) box.appendChild(pgMais(mais));
+    if(prim) box.appendChild(prim);
+    mh.appendChild(box);
+  });
+  // telas antigas: "Gerar PDF / Imprimir" vai para o menu Mais
+  document.querySelectorAll('.tabpanel button').forEach(b => {
+    if(b.textContent.trim() !== 'Gerar PDF / Imprimir' || b.closest('.pg-mais')) return;
+    const d = pgMais([b.cloneNode(true)]); b.replaceWith(d);
+  });
+}
+document.addEventListener('click', e => { if(!e.target.closest('.pg-mais')) document.querySelectorAll('.pg-mais[open]').forEach(d => d.open = false); });
+
+// ---- validação ao sair do campo + resumo da etapa
+const FV = {
+  nu:{ form:'usNovoForm', campos:{
+    nuNome:{ t:'Nome', f:v => v.replace(/\s+/g, ' ').length >= 3 || 'Informe o nome completo.' },
+    nuEmail:{ t:'E-mail', f:v => /^\S+@\S+\.\S+$/.test(v) || 'Informe um e-mail válido, como nome@exemplo.com.' },
+    nuNasc:{ t:'Data de nascimento', f:v => !!v || 'Informe a data de nascimento.' },
+    nuWhats:{ t:'WhatsApp', f:v => !v || v.replace(/\D/g, '').length >= 10 || 'WhatsApp incompleto. Use DDD + número.' } } },
+  na:{ form:'apNovoForm', campos:{
+    naNome:{ t:'Nome', f:v => v.replace(/\s+/g, ' ').length >= 3 || 'Informe o nome completo do apoiador.' },
+    naWhats:{ t:'WhatsApp', f:v => v.replace(/\D/g, '').length >= 10 || 'Informe o WhatsApp com DDD + número.' },
+    naEmail:{ t:'E-mail', f:v => !v || /^\S+@\S+\.\S+$/.test(v) || 'E-mail inválido.' },
+    naNasc:{ t:'Data de nascimento', f:v => !!v || 'Informe a data de nascimento.' },
+    naLider:{ t:'Indicado por', f:v => !!v || 'Informe quem indicou o apoiador.' } } }
+};
+function fvCampo(id, mostrar){
+  const el = document.getElementById(id); if(!el) return '';
+  const regra = FV.nu.campos[id] || FV.na.campos[id]; const r = regra.f(String(el.value || '').trim());
+  const msg = r === true ? '' : r;
+  if(mostrar !== false){
+    const ant = document.querySelector('.campo-msg[data-for="' + id + '"]'); if(ant) ant.remove();
+    el.classList.toggle('campo-erro', !!msg); if(msg) el.setAttribute('aria-invalid', 'true'); else el.removeAttribute('aria-invalid');
+    if(msg){ const m = document.createElement('div'); m.className = 'campo-msg'; m.dataset.for = id; m.setAttribute('role', 'alert'); m.innerHTML = '<span aria-hidden="true">⚠</span><span></span>'; m.lastChild.textContent = msg; el.insertAdjacentElement('afterend', m); }
+  }
+  return msg;
+}
+function fvEtapa(p){
+  const cfg = FV[p], erros = [];
+  Object.keys(cfg.campos).forEach(id => { const m = fvCampo(id); if(m) erros.push(id); });
+  const passo0 = document.querySelector('#' + cfg.form + ' .nu-step[data-step="0"]');
+  let box = passo0.querySelector('.step-resumo');
+  if(!erros.length){ if(box) box.remove(); return true; }
+  if(!box){ box = document.createElement('div'); box.className = 'step-resumo'; box.setAttribute('role', 'alert'); box.tabIndex = -1; passo0.insertBefore(box, passo0.firstChild); }
+  box.textContent = 'Corrija ' + erros.length + ' campo(s) para continuar: ' + erros.map(id => cfg.campos[id].t).join(', ') + '.';
+  const primeiro = document.getElementById(erros[0]); if(primeiro) primeiro.focus();
+  return false;
+}
+(function(){
+  const _nuIr = nuIr, _naIr = naIr;
+  nuIr = function(i){ if(i > nuPasso && nuPasso === 0 && !fvEtapa('nu')) return; _nuIr(i); };
+  naIr = function(i){ if(i > naPasso && naPasso === 0 && !fvEtapa('na')) return; _naIr(i); };
+})();
+
+// ---- rascunho automático
+const RC = { nu:{ form:'usNovoForm', key:'painelRascunhoUsuario', tab:'us-novo' }, na:{ form:'apNovoForm', key:'painelRascunhoApoiador', tab:'ap-novo' } };
+function rcAlterados(p){
+  const f = document.getElementById(RC[p].form), o = {};
+  f.querySelectorAll('input, select, textarea').forEach(el => {
+    if(!el.id) return;
+    if(el.type === 'checkbox'){ if(el.checked !== el.defaultChecked) o[el.id] = el.checked; }
+    else if(el.tagName === 'SELECT'){ const d = [...el.options].findIndex(x => x.defaultSelected); if(el.selectedIndex !== (d < 0 ? 0 : d)) o[el.id] = el.value; }
+    else if(el.value !== el.defaultValue) o[el.id] = el.value;
+  });
+  return o;
+}
+const rcSujo = p => Object.keys(rcAlterados(p)).length > 0;
+function rcSalvar(p){ const o = rcAlterados(p); try { if(Object.keys(o).length) localStorage.setItem(RC[p].key, JSON.stringify(o)); else localStorage.removeItem(RC[p].key); } catch(e){} }
+function rcRestaurar(p){
+  const f = document.getElementById(RC[p].form); if(!f || f.querySelector('.rascunho-aviso') || rcSujo(p)) return;
+  let o = null; try { o = JSON.parse(localStorage.getItem(RC[p].key) || 'null'); } catch(e){}
+  if(!o || !Object.keys(o).length) return;
+  Object.keys(o).forEach(id => { const el = document.getElementById(id); if(!el) return; if(el.type === 'checkbox') el.checked = !!o[id]; else el.value = o[id]; });
+  const av = document.createElement('div'); av.className = 'rascunho-aviso'; av.setAttribute('role', 'status');
+  av.innerHTML = '<span>Recuperamos o rascunho do cadastro que você não terminou.</span><button type="button">Descartar rascunho</button>';
+  av.querySelector('button').onclick = () => { f.reset(); av.remove(); };
+  f.insertBefore(av, f.firstChild);
+}
+(function(){
+  const _rUN = renderUsNovo, _rAN = renderApNovo;
+  renderUsNovo = function(){ _rUN.apply(this, arguments); rcRestaurar('nu'); };
+  renderApNovo = function(){ _rAN.apply(this, arguments); rcRestaurar('na'); };
+  const _st = switchTab;
+  switchTab = function(name, opts){
+    const ant = window.__tabAtual; window.__tabAtual = name;
+    ['nu', 'na'].forEach(p => { if(ant === RC[p].tab && name !== ant && rcSujo(p)){ rcSalvar(p); avisoTela('Cadastro guardado como rascunho. Volte a "' + (p === 'nu' ? 'Novo usuário' : 'Novo apoiador') + '" para continuar.'); } });
+    return _st.call(this, name, opts);
+  };
+})();
+document.addEventListener('DOMContentLoaded', () => {
+  pgCabecalhos();
+  ['nu', 'na'].forEach(p => {
+    const f = document.getElementById(RC[p].form); if(!f) return;
+    let t = null;
+    f.addEventListener('input', e => { clearTimeout(t); t = setTimeout(() => rcSalvar(p), 400); const id = e.target.id; if(FV[p].campos[id] && e.target.classList.contains('campo-erro')) fvCampo(id); });
+    f.addEventListener('change', () => rcSalvar(p));
+    f.addEventListener('focusout', e => { const id = e.target.id; if(FV[p].campos[id]) fvCampo(id); });
+    f.addEventListener('reset', () => { try { localStorage.removeItem(RC[p].key); } catch(e){} f.querySelectorAll('.campo-msg,.step-resumo,.rascunho-aviso').forEach(x => x.remove()); f.querySelectorAll('.campo-erro').forEach(x => x.classList.remove('campo-erro')); });
+    f.addEventListener('submit', e => { if(!fvEtapa(p)){ e.preventDefault(); e.stopImmediatePropagation(); (p === 'nu' ? _nuIrOrig : _naIrOrig)(0); } }, true);
+  });
+});
+const _nuIrOrig = i => { nuPasso = i; document.querySelectorAll('#tabUsNovo .nu-step').forEach(s => { s.hidden = +s.dataset.step !== i; }); document.querySelectorAll('#tabUsNovo .nu-tab').forEach(t => t.classList.toggle('active', +t.dataset.nu === i)); };
+const _naIrOrig = i => { naPasso = i; document.querySelectorAll('#tabApNovo .nu-step').forEach(s => { s.hidden = +s.dataset.step !== i; }); document.querySelectorAll('#tabApNovo .nu-tab').forEach(t => t.classList.toggle('active', +t.dataset.nu === i)); };
+window.addEventListener('beforeunload', e => { if(rcSujo('nu') || rcSujo('na')){ e.preventDefault(); e.returnValue = ''; } });
+
+// ---- barra de ações em lote (Apoiadores > Ver todos)
+function apLoteAtualizar(){
+  const bar = document.getElementById('apLoteBar'); if(!bar) return;
+  bar.hidden = apSel.size === 0;
+  document.getElementById('apLoteN').textContent = apSel.size + ' selecionado(s)';
+  const sel = document.getElementById('apLoteSeg');
+  if(!sel.options.length){ sel.add(new Option('Sem segmento', 'Sem segmento')); [...document.getElementById('apSeg').options].filter(o => o.value !== 'all' && o.value !== 'Sem segmento').forEach(o => sel.add(new Option(o.textContent, o.value))); }
+}
+(function(){
+  const _r = renderApTodos;
+  renderApTodos = function(){ const r = _r.apply(this, arguments); apLoteAtualizar(); return r; };
+})();
+document.addEventListener('DOMContentLoaded', () => {
+  const $ = id => document.getElementById(id); if(!$('apLoteBar')) return;
+  $('apLoteExp').onclick = () => exportApTodosCSV();
+  $('apLoteLimpar').onclick = () => { apSel.clear(); renderApTodos(); };
+  $('apLoteCopiar').onclick = () => {
+    const tels = buildApoiadoresLista().filter(a => apSel.has(personKey(a.nome)) && a.whatsapp).map(a => a.whatsapp);
+    if(!tels.length) return avisoTela('Nenhum dos selecionados tem WhatsApp cadastrado.', 'erro');
+    upCopiar(tels.join('\n'), tels.length + ' número(s) copiado(s), um por linha.');
+  };
+  $('apLoteSegBtn').onclick = () => {
+    const seg = $('apLoteSeg').value, n = apSel.size; if(!n) return;
+    const arr = apLocaisLoad(), locais = new Set(); let mudou = false;
+    arr.forEach(a => { const k = personKey(a.nome); if(apSel.has(k)){ locais.add(k); a.segmento = seg; mudou = true; } });
+    if(mudou) apLocaisSave(arr);
+    const ov = lsJ('painelApoiadoresSegmento', {}); [...apSel].forEach(k => { if(!locais.has(k)) ov[k] = seg; }); lsS('painelApoiadoresSegmento', ov);
+    apInvalidar(); apSel.clear(); renderApTodos(true); avisoTela('Segmento "' + seg + '" aplicado a ' + n + ' apoiador(es).');
+  };
+});
+
 try {
   render(
     mergeParsed([parseCampaignCSV(DEFAULT_CSV), parseCampaignCSV(DEFAULT_CSV_REGIONAL)]),
@@ -3774,7 +3989,7 @@ function personKeyFallback(str){
   return s;
 }
 
-const TAB_IDS = ['geral', 'regional', 'usuario', 'performance', 'apuracao', 'atualizar', 'conversor', 'ap-todos', 'ap-novo', 'ap-mapa', 'ap-seg', 'ap-seg-novo', 'ap-import', 'us-todos', 'us-novo', 'us-mapa', 'us-hier', 'us-rank', 'us-perfil', 'us-perm'];
+const TAB_IDS = ['geral', 'regional', 'usuario', 'performance', 'apuracao', 'atualizar', 'conversor', 'ap-todos', 'ap-novo', 'ap-mapa', 'ap-seg', 'ap-seg-novo', 'ap-import', 'us-todos', 'us-novo', 'us-mapa', 'us-hier', 'us-rank', 'us-perfil', 'us-perm', 'novidades'];
 
 const SOON_PAGES = {
   'com-msgs':    { grupo:'Comunicação', titulo:'Mensagens em massa', desc:'Envio de mensagens para grupos de apoiadores, com modelos prontos e acompanhamento de quem recebeu.' },
@@ -3832,7 +4047,7 @@ function buildApoiadoresLista(){
   const metas = getLiderMetaMap(), porLider = getApoiadoresPorLiderMap();
   if(_apCache && _apCacheSrc === porLider) return _apCache;
   _apCacheSrc = porLider;
-  const vistos = new Set(), out = [];
+  const vistos = new Set(), out = [], segOv = lsJ('painelApoiadoresSegmento', {});
   Object.keys(porLider).forEach(lk => {
     const meta = metas[lk] || {};
     (porLider[lk] || []).forEach(a => {
@@ -3840,7 +4055,7 @@ function buildApoiadoresLista(){
       if(!k || vistos.has(k)) return;
       vistos.add(k);
       out.push({ nome:a.nome, whatsapp:a.whatsapp || '', confirmado:a.confirmado === true,
-        segmento:a.segmento || 'Sem segmento', lider:meta.nome || lk, bairro:meta.bairro || '', segLider:meta.segmento || '', local:false });
+        segmento:segOv[k] || a.segmento || 'Sem segmento', lider:meta.nome || lk, bairro:meta.bairro || '', segLider:meta.segmento || '', local:false });
     });
   });
   apLocaisLoad().forEach(a => {
@@ -4752,6 +4967,7 @@ function switchTab(name, opts){
   syncMenu(name, opts);
   if(name === 'performance' && !performanceRendered) renderPerformanceReport();
   if(name === 'geral' && typeof renderVisaoGeral === 'function') setTimeout(renderVisaoGeral, 0);
+  if(name === 'novidades') renderNovidades();
   if(name.indexOf('ap-') === 0) renderApTab(name);
   if(name.indexOf('us-') === 0) renderUsTab(name);
   if(name !== 'embreve') savePanelState({ activeTab: name });
@@ -4789,7 +5005,7 @@ function toggleSidebarMobile(){
 let menuToastTimer = null;
 async function clicouSair(){
   if(dbOn()){
-    try { sessionStorage.removeItem('painel_db_cache'); sessionStorage.removeItem('painel_campanha_state'); } catch(e){}
+    try { sessionStorage.removeItem('painel_db_cache'); sessionStorage.removeItem('painel_campanha_state'); localStorage.removeItem('painelRascunhoUsuario'); localStorage.removeItem('painelRascunhoApoiador'); } catch(e){}
     try { const c = await dbCliente(); await c.auth.signOut(); } catch(e){}
     location.reload(); return;
   }
