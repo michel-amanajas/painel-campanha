@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Cadastro de apoiador</title>
+<style>
+  :root{color-scheme:light dark; --bg:#F3F5F8; --card:#fff; --text:#0F172A; --muted:#5A6478; --line:rgba(15,23,42,.14); --accent:#0A7A41; --on:#fff; --err:#B42318;}
+  @media (prefers-color-scheme:dark){:root{--bg:#0E1117; --card:#171B24; --text:#EEF1F6; --muted:#98A1B3; --line:rgba(255,255,255,.16); --accent:#34D399; --on:#062A1B; --err:#F0685D;}}
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--bg); color:var(--text); font:16px/1.5 'Inter',system-ui,sans-serif; min-height:100vh; display:flex; justify-content:center; padding:24px 16px;}
+  main{width:100%; max-width:440px; background:var(--card); border:1px solid var(--line); border-radius:16px; padding:24px; align-self:flex-start;}
+  h1{font-size:24px; margin:0 0 4px;} p{margin:0 0 16px; color:var(--muted); font-size:14px;}
+  label{display:block; font-size:14px; font-weight:600; margin:16px 0 4px;}
+  input[type=text],input[type=tel]{width:100%; min-height:44px; padding:10px 12px; border:1px solid var(--line); border-radius:8px; background:transparent; color:var(--text); font:inherit;}
+  input:focus-visible,button:focus-visible{outline:3px solid var(--accent); outline-offset:2px;}
+  .ck{display:flex; gap:12px; align-items:flex-start; font-weight:400; font-size:14px; color:var(--muted); margin-top:16px;}
+  .ck input{width:24px; height:24px; flex:none; margin:0;}
+  button{width:100%; min-height:48px; margin-top:24px; border:0; border-radius:999px; background:var(--accent); color:var(--on); font:inherit; font-weight:700; cursor:pointer;}
+  button:disabled{opacity:.6; cursor:default;}
+  .msg{margin-top:16px; font-size:14px; padding:12px; border-radius:8px; display:none;}
+  .msg.err{display:block; color:var(--err); border:1px solid var(--err);} .msg.ok{display:block; border:1px solid var(--accent);}
+  .hp{position:absolute; left:-9999px; height:0; overflow:hidden;}
+  .req{color:var(--err)}
+</style>
+</head>
+<body>
+<main>
+  <h1>Faça parte do time</h1>
+  <p id="sub">Carregando…</p>
+  <form id="f" hidden novalidate>
+    <label for="nome">Nome completo <span class="req" aria-hidden="true">*</span></label>
+    <input id="nome" type="text" autocomplete="name" required maxlength="120">
+    <label for="fone">WhatsApp com DDD <span class="req" aria-hidden="true">*</span></label>
+    <input id="fone" type="tel" inputmode="tel" autocomplete="tel" placeholder="(96) 99999-9999" required maxlength="30">
+    <label for="cidade">Cidade</label>
+    <input id="cidade" type="text" maxlength="80">
+    <label for="bairro">Bairro</label>
+    <input id="bairro" type="text" maxlength="80">
+    <div class="hp" aria-hidden="true"><label>Não preencha <input id="site" type="text" tabindex="-1" autocomplete="off"></label></div>
+    <label class="ck"><input id="ok" type="checkbox"><span>Autorizo o uso do meu nome e WhatsApp pela campanha para contato, conforme a LGPD. Posso pedir a exclusão dos meus dados quando quiser.</span></label>
+    <button id="enviar" type="submit">Enviar cadastro</button>
+  </form>
+  <div id="msg" class="msg" role="status" aria-live="polite"></div>
+</main>
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+(function(){
+  var $ = function(i){ return document.getElementById(i); };
+  var token = new URLSearchParams(location.search).get('t') || '';
+  var sub = $('sub'), f = $('f'), msg = $('msg');
+  function say(t, tipo){ msg.textContent = t; msg.className = 'msg ' + tipo; }
+  if(!/^[0-9a-f-]{36}$/i.test(token)){ sub.textContent = 'Este link não é válido. Peça um novo a quem convidou você.'; return; }
+  var c;
+  try { c = window.supabase.createClient(window.PAINEL_CONFIG.SUPABASE_URL, window.PAINEL_CONFIG.SUPABASE_ANON_KEY, { auth:{ persistSession:false } }); }
+  catch(e){ sub.textContent = 'Não foi possível carregar a página. Verifique sua internet e tente de novo.'; return; }
+  c.rpc('lider_do_link', { p_token:token }).then(function(r){
+    if(r.error || !r.data){ sub.textContent = 'Este link não está mais ativo. Peça um novo a quem convidou você.'; return; }
+    sub.textContent = 'Seu cadastro entra no time de ' + r.data + '.'; f.hidden = false; $('nome').focus();
+  });
+  f.addEventListener('submit', function(e){
+    e.preventDefault(); if($('site').value) return;
+    var nome = $('nome').value.trim(), fone = $('fone').value.trim();
+    if(nome.length < 5 || nome.indexOf(' ') < 0) return say('Informe o nome completo.', 'err');
+    if(fone.replace(/\D/g,'').length < 10) return say('Informe o WhatsApp com DDD.', 'err');
+    if(!$('ok').checked) return say('Marque a autorização para continuar.', 'err');
+    $('enviar').disabled = true; say('Enviando…', 'ok');
+    c.rpc('cadastro_publico', { p_token:token, p_nome:nome, p_whatsapp:fone, p_bairro:$('bairro').value, p_cidade:$('cidade').value, p_consentimento:true }).then(function(r){
+      $('enviar').disabled = false;
+      if(r.error) return say('Não foi possível enviar agora. Tente de novo em instantes.', 'err');
+      if(r.data === 'ok'){ f.hidden = true; sub.textContent = ''; say('Cadastro enviado. Obrigado por apoiar!', 'ok'); }
+      else if(r.data === 'duplicado') say('Você já está cadastrado. Obrigado!', 'ok');
+      else if(r.data === 'link') say('Este link não está mais ativo.', 'err');
+      else say('Confira os dados e tente de novo.', 'err');
+    });
+  });
+})();
+</script>
+</body>
+</html>
