@@ -4242,6 +4242,34 @@ document.addEventListener('DOMContentLoaded', () => {
   Object.keys(CEP_ALVOS).forEach(pref => { const el = document.getElementById(CEP_ALVOS[pref].cep); if(!el) return;
     el.setAttribute('inputmode', 'numeric'); el.addEventListener('input', () => { if(el.value.replace(/\D/g, '').length === 8) cepBuscar(pref); else cepUlt[pref] = null; }); el.addEventListener('blur', () => cepBuscar(pref)); });
 });
+
+/* ===== Regiões: soma os cadastros novos (com bairro/cidade) aos dados da base ===== */
+let regUltAssin = null;
+function regionalDadosAtuais(){
+  const d = parseCampaignCSV(DEFAULT_CSV_REGIONAL);
+  let extra = []; try { extra = apLocaisLoad().filter(a => (a.bairro || '').trim() || (a.cidade || '').trim()); } catch(e){}
+  if(!extra.length) return d;
+  const sec = t => d.sections.find(s => s.title.toLowerCase().includes(t));
+  const sB = sec('bairro'), sC = sec('cidade');
+  const add = (s, nome) => { nome = (nome || '').trim(); if(!s || !nome) return; const k = normKey(nome), row = s.rows.find(r => normKey(r[0]) === k);
+    if(row) row[1] = String((asNum(row[1]) || 0) + 1); else s.rows.push([nome, '1']); };
+  const m = MUNICIPIO_BAIRRO_MAP;
+  extra.forEach(a => {
+    add(sB, a.bairro); add(sC, a.cidade);
+    const b = (a.bairro || '').trim(), c = (a.cidade || '').trim();
+    if(b && c){ const kb = normKey(b); (m.bairroToCidades[kb] = m.bairroToCidades[kb] || []); if(m.bairroToCidades[kb].indexOf(c) < 0) m.bairroToCidades[kb].push(c);
+      (m.cidadeToBairros[c] = m.cidadeToBairros[c] || []); if(!m.cidadeToBairros[c].some(x => normKey(x) === kb)) m.cidadeToBairros[c].push(b); }
+  });
+  [sB, sC].forEach(s => { if(s) s.rows.sort((x, y) => (asNum(y[1]) || 0) - (asNum(x[1]) || 0)); });
+  const tot = d.summary.find(r => /total de apoiadores/i.test(r[0])); if(tot) tot[1] = String((asNum(tot[1]) || 0) + extra.length);
+  return d;
+}
+function regionalAtualizar(){
+  let ass = 0; try { ass = apLocaisLoad().length; } catch(e){}
+  if(ass === regUltAssin && lastRegionalData) return; regUltAssin = ass;
+  try { renderRegional(regionalDadosAtuais(), 'dados atuais'); applyRegionalFilter(); } catch(e){ console.error('Falha ao atualizar Regiões:', e); }
+}
+(function(){ const _s = switchTab; switchTab = function(name, opts){ const r = _s.call(this, name, opts); if(name === 'regional') regionalAtualizar(); return r; }; })();
 try {
   render(
     mergeParsed([parseCampaignCSV(DEFAULT_CSV), parseCampaignCSV(DEFAULT_CSV_REGIONAL)]),
@@ -6455,7 +6483,8 @@ function handleRegionalFiles(fileList){
 }
 
 try {
-  renderRegional(parseCampaignCSV(DEFAULT_CSV_REGIONAL), 'supporters_by_region_20260826_1805.csv');
+  renderRegional(regionalDadosAtuais(), 'supporters_by_region_20260826_1805.csv');
+  try { regUltAssin = apLocaisLoad().length; } catch(e){}
 } catch (err) {
   console.error('Falha ao renderizar o Painel Regional:', err);
 }
