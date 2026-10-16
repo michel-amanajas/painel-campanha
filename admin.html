@@ -1210,6 +1210,7 @@ function truncateText(ctx, text, maxWidth){
   .ue-grid label{display:block; font-size:var(--fs-2); font-weight:600;}
   .ue-grid .filter-select{width:100%; min-width:0; margin-top:4px;}
   .ue-grid .ue-chk{display:flex; align-items:center; gap:var(--sp-2); font-weight:400;}
+  .nu-editando .ur-note,.nu-editando .nu-so-novo{display:none !important;}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 </head>
@@ -2006,12 +2007,7 @@ function truncateText(ctx, text, maxWidth){
     </section>
   </div>
 
-  <dialog id="upEditDlg" class="up-dlg up-dlg--wide"><form id="upEditForm" method="dialog">
-    <h3>Editar usuário</h3>
-    <div class="ue-tabs" role="tablist" aria-label="Etapas da edição"><button type="button" class="nu-tab active" role="tab" data-ue="0">Básico</button><button type="button" class="nu-tab" role="tab" data-ue="1">Endereço</button><button type="button" class="nu-tab" role="tab" data-ue="2">Detalhes</button></div>
-    <div id="ueCorpo"></div>
-    <div class="up-dlg-b"><button type="button" class="us-btn" id="ueCancelar">Cancelar</button><button type="submit" class="us-btn us-btn--primary">Salvar</button></div>
-  </form></dialog>
+  
   <dialog id="upConfDlg" class="up-dlg"><form method="dialog"><h3 id="ucTitulo"></h3><p id="ucTexto" class="vg-sub" style="font-size:14px;line-height:1.5"></p>
     <div class="up-dlg-b"><button type="button" class="us-btn" id="ucNao">Cancelar</button><button type="button" class="us-btn us-btn--remover" id="ucSim">Confirmar</button></div></form></dialog>
 
@@ -3584,27 +3580,7 @@ function upLigar(){
       usHistAdd(k, 'Usuário removido'); usPerfilKey = null; avisoTela('Usuário removido.'); switchTab('us-todos');
     }); };
   // editar
-  $('upEditar').onclick = () => { const u = upUsuario(); if(!u) return;
-    const base = Object.assign({}, u, { nome:u.nomeExib || fmtNome(usLimpaNome(u.nome)), segmento:/sem segmento/i.test(u.segmento || '') ? '' : (u.segmento || ''),
-      meta:Number(u.meta) > 0 ? u.meta : (((USER_REPORTS[usPerfilKey] || {}).perf || {}).meta || '') });
-    ueMontar(base); $('upEditDlg').showModal(); };
-  $('upEditDlg').addEventListener('click', e => { const b = e.target.closest('[data-ue]'); if(b) ueEtapa(Number(b.dataset.ue)); });
-  $('ueCancelar').onclick = () => $('upEditDlg').close();
-  $('upEditForm').addEventListener('submit', e => {
-    e.preventDefault(); const k = usPerfilKey, ed = usEdicoes(), un = upUsuario();
-    const val = c => { const el = $('ue_' + c[1]); if(!el) return undefined; const t = ueTipoReal(c); return t === 'check' ? el.checked : el.value.trim(); };
-    const o = {}; UE_CAMPOS.forEach(c => { o[c[1]] = val(c); });
-    if(!o.nome || o.nome.length < 3){ ueEtapa(0); avisoTela('Informe o nome do usuário.', 'erro'); return; }
-    const tel = o.telefone; if(tel && tel.replace(/\D/g, '').length < 10){ ueEtapa(0); avisoTela('Telefone incompleto. Use DDD + número.', 'erro'); return; }
-    if(o.email && !/^\S+@\S+\.\S+$/.test(o.email)){ ueEtapa(0); avisoTela('Informe um e-mail válido.', 'erro'); return; }
-    const antes = ed[k] || {}, mudou = [];
-    const cur = Object.assign({}, un, { nome:un.nomeExib || fmtNome(usLimpaNome(un.nome)), segmento:/sem segmento/i.test(un.segmento || '') ? '' : (un.segmento || '') });
-    UE_CAMPOS.forEach(c => { const a = cur[c[1]], b = o[c[1]]; if(String(a == null || a === false ? '' : a) !== String(b == null || b === false ? '' : b)) mudou.push(c[2]); });
-    const nomeOrig = fmtNome(usLimpaNome(un.nome));
-    ed[k] = Object.assign({}, antes, o, { nomeExib:o.nome === nomeOrig ? undefined : o.nome, segmento:o.segmento || 'Sem segmento', meta:o.meta ? Number(o.meta) : undefined });
-    delete ed[k].nome;
-    lsS(US_EDIT_KEY, ed); usHistAdd(k, 'Dados editados' + (mudou.length ? ': ' + mudou.slice(0, 6).join(', ') + (mudou.length > 6 ? '…' : '') : '')); $('upEditDlg').close(); avisoTela('Dados do usuário atualizados.'); renderUsPerfil();
-  });
+  $('upEditar').onclick = usEditarAbrir;
   // tabela de apoiadores
   $('upBuscaForm').addEventListener('submit', e => { e.preventDefault(); UP.q = $('upQ').value; UP.pag = 0; upTabela(upApoiadores(usPerfilKey)); });
   $('upQ').addEventListener('input', e => { if(!e.target.value && UP.q){ UP.q = ''; UP.pag = 0; upTabela(upApoiadores(usPerfilKey)); } });
@@ -3881,7 +3857,7 @@ function fvEtapa(p){
 }
 (function(){
   const _nuIr = nuIr, _naIr = naIr;
-  nuIr = function(i){ if(i > nuPasso && nuPasso === 0 && !fvEtapa('nu')) return; _nuIr(i); };
+  nuIr = function(i){ if(i > nuPasso && nuPasso === 0 && !window.nuEdit && !fvEtapa('nu')) return; _nuIr(i); };
   naIr = function(i){ if(i > naPasso && naPasso === 0 && !fvEtapa('na')) return; _naIr(i); };
 })();
 
@@ -3898,8 +3874,9 @@ function rcAlterados(p){
   return o;
 }
 const rcSujo = p => Object.keys(rcAlterados(p)).length > 0;
-function rcSalvar(p){ const o = rcAlterados(p); try { if(Object.keys(o).length) localStorage.setItem(RC[p].key, JSON.stringify(o)); else localStorage.removeItem(RC[p].key); } catch(e){} }
+function rcSalvar(p){ if(p === 'nu' && window.nuEdit) return; const o = rcAlterados(p); try { if(Object.keys(o).length) localStorage.setItem(RC[p].key, JSON.stringify(o)); else localStorage.removeItem(RC[p].key); } catch(e){} }
 function rcRestaurar(p){
+  if(p === 'nu' && window.nuEdit) return;
   const f = document.getElementById(RC[p].form); if(!f || f.querySelector('.rascunho-aviso') || rcSujo(p)) return;
   let o = null; try { o = JSON.parse(localStorage.getItem(RC[p].key) || 'null'); } catch(e){}
   if(!o || !Object.keys(o).length) return;
@@ -3916,7 +3893,7 @@ function rcRestaurar(p){
   const _st = switchTab;
   switchTab = function(name, opts){
     const ant = window.__tabAtual; window.__tabAtual = name;
-    ['nu', 'na'].forEach(p => { if(ant === RC[p].tab && name !== ant && rcSujo(p)){ rcSalvar(p); avisoTela('Cadastro guardado como rascunho. Volte a "' + (p === 'nu' ? 'Novo usuário' : 'Novo apoiador') + '" para continuar.'); } });
+    ['nu', 'na'].forEach(p => { if(ant === RC[p].tab && name !== ant && rcSujo(p) && !(p === 'nu' && window.nuEdit)){ rcSalvar(p); avisoTela('Cadastro guardado como rascunho. Volte a "' + (p === 'nu' ? 'Novo usuário' : 'Novo apoiador') + '" para continuar.'); } });
     return _st.call(this, name, opts);
   };
 })();
@@ -3929,7 +3906,7 @@ document.addEventListener('DOMContentLoaded', () => {
     f.addEventListener('change', () => rcSalvar(p));
     f.addEventListener('focusout', e => { const id = e.target.id; if(FV[p].campos[id]) fvCampo(id); });
     f.addEventListener('reset', () => { try { localStorage.removeItem(RC[p].key); } catch(e){} f.querySelectorAll('.campo-msg,.step-resumo,.rascunho-aviso').forEach(x => x.remove()); f.querySelectorAll('.campo-erro').forEach(x => x.classList.remove('campo-erro')); });
-    f.addEventListener('submit', e => { if(!fvEtapa(p)){ e.preventDefault(); e.stopImmediatePropagation(); (p === 'nu' ? _nuIrOrig : _naIrOrig)(0); } }, true);
+    f.addEventListener('submit', e => { if(!(p === 'nu' && window.nuEdit) && !fvEtapa(p)){ e.preventDefault(); e.stopImmediatePropagation(); (p === 'nu' ? _nuIrOrig : _naIrOrig)(0); } }, true);
   });
 });
 const _nuIrOrig = i => { nuPasso = i; document.querySelectorAll('#tabUsNovo .nu-step').forEach(s => { s.hidden = +s.dataset.step !== i; }); document.querySelectorAll('#tabUsNovo .nu-tab').forEach(t => t.classList.toggle('active', +t.dataset.nu === i)); };
@@ -4179,26 +4156,93 @@ const UE_CAMPOS = [
   [2, 'religiao', 'Religião', 'text', 'nuRelig'], [2, 'dependentes', 'Dependentes', 'number', 'nuDep'], [2, 'estuda', 'Estuda atualmente', 'check', 'nuEstuda'], [2, 'trabalha', 'Trabalha atualmente', 'check', 'nuTrabalha'], [2, 'transporte', 'Transporte', 'text', 'nuTransp'],
   [2, 'instagram', 'Instagram', 'text', 'nuInsta'], [2, 'twitter', 'Twitter / X', 'text', 'nuTw'], [2, 'facebook', 'Facebook', 'text', 'nuFb'], [2, 'obs', 'Observações', 'area', 'nuObs']
 ];
-function ueTipoReal(c){ if(c[3] === 'papel') return 'papel'; const el = c[4] && document.getElementById(c[4]); if(!el) return c[3] === 'select' ? 'text' : c[3]; if(el.tagName === 'SELECT') return 'select'; if(el.tagName === 'TEXTAREA') return 'area'; if(el.type === 'checkbox') return 'check'; return el.type === 'number' || el.type === 'date' ? el.type : 'text'; }
-function ueMontar(u){
-  const g = (k) => u[k] == null ? '' : u[k];
-  const corpo = [0, 1, 2].map(et => '<div class="ue-grid" data-ueet="' + et + '"' + (et ? ' hidden' : '') + '>' + UE_CAMPOS.filter(c => c[0] === et).map(c => {
-    const id = 'ue_' + c[1], t = ueTipoReal(c), val = g(c[1]), lb = escapeHtml(c[2]);
-    if(t === 'check') return '<label class="ue-chk"><input type="checkbox" id="' + id + '"' + (val === true || val === 'on' || val === '1' || val === 1 ? ' checked' : '') + '> ' + lb + '</label>';
-    if(t === 'area') return '<label class="full">' + lb + '<textarea id="' + id + '" class="filter-select" rows="4" maxlength="800">' + escapeHtml(val) + '</textarea></label>';
-    if(t === 'papel') return '<label>' + lb + '<select id="' + id + '" class="filter-select">' + ['Líder', 'Coordenador', 'Administrador', 'Mobilizador'].map(o => '<option' + (o === (val || 'Líder') ? ' selected' : '') + '>' + o + '</option>').join('') + '</select></label>';
-    if(t === 'select'){ const src = document.getElementById(c[4]); let ops = src ? Array.from(src.options).map(o => [o.value, o.textContent]) : [];
-      if(val && !ops.some(o => o[0] === String(val) || o[1] === String(val))) ops.push([String(val), String(val)]);
-      return '<label>' + lb + '<select id="' + id + '" class="filter-select">' + ops.map(o => '<option value="' + escapeHtml(o[0]) + '"' + (o[0] === String(val) || (!val && o[0] === '') ? ' selected' : '') + '>' + escapeHtml(o[1]) + '</option>').join('') + '</select></label>'; }
-    return '<label>' + lb + '<input id="' + id + '" class="filter-select" type="' + (t === 'number' || t === 'date' ? t : 'text') + '" value="' + escapeHtml(val) + '" maxlength="140"></label>';
-  }).join('') + '</div>').join('');
-  document.getElementById('ueCorpo').innerHTML = corpo;
-  ueEtapa(0);
+
+const NU_TITULO0 = ['Cadastre um novo usuário', 'Preencha os campos abaixo para cadastrar um novo usuário.'];
+let nuRascunhoGuardado = null;
+function nuPreencherSelect(id, val){
+  const s = document.getElementById(id); if(!s) return;
+  if(val && !Array.from(s.options).some(o => o.value === String(val))) s.add(new Option(String(val), String(val)));
+  s.value = val == null ? '' : String(val);
 }
-function ueEtapa(n){
-  document.querySelectorAll('#ueCorpo [data-ueet]').forEach(d => { d.hidden = Number(d.dataset.ueet) !== n; });
-  document.querySelectorAll('.ue-tabs .nu-tab').forEach(b => { const on = Number(b.dataset.ue) === n; b.classList.toggle('active', on); b.setAttribute('aria-selected', on ? 'true' : 'false'); });
+function usEditarAbrir(){
+  const u = upUsuario(); if(!u) return;
+  nuRascunhoGuardado = (function(){ try { return localStorage.getItem(RC.nu.key); } catch(e){ return null; } })();
+  window.nuEdit = usPerfilKey;
+  switchTab('us-novo', { edit:true });
+  const f = document.getElementById('usNovoForm'); f.reset();
+  const t = document.getElementById('tabUsNovo'); t.classList.add('nu-editando');
+  t.querySelector('.masthead h1').textContent = 'Editar usuário';
+  t.querySelector('.masthead p').textContent = 'Altere os campos em cada etapa e clique em Salvar. Nome, endereço e detalhes podem ser atualizados.';
+  const voltar = t.querySelector('.us-btn--voltar'); voltar.dataset.oc = voltar.getAttribute('onclick'); voltar.setAttribute('onclick', "switchTab('us-perfil')");
+  t.querySelectorAll('.nu-box').forEach(b => { b.classList.add('nu-so-novo'); const pr = b.previousElementSibling; if(pr && pr.tagName === 'H3') pr.classList.add('nu-so-novo'); });
+  const base = Object.assign({}, u, { nome:u.nomeExib || fmtNome(usLimpaNome(u.nome)), segmento:/sem segmento/i.test(u.segmento || '') ? '' : (u.segmento || ''),
+    meta:Number(u.meta) > 0 ? u.meta : (((USER_REPORTS[usPerfilKey] || {}).perf || {}).meta || '') });
+  UE_CAMPOS.forEach(c => { const el = document.getElementById(c[4]); if(!el) return; const v = base[c[1]];
+    if(el.type === 'checkbox') el.checked = v === true || v === 'on' || v === '1' || v === 1;
+    else if(el.tagName === 'SELECT') nuPreencherSelect(c[4], v);
+    else el.value = v == null ? '' : v; });
+  const pp = { Administrador:'nuPermAdmin', Coordenador:'nuPermCoord', Mobilizador:'nuPermMob', 'Líder':'nuPermLider' }[u.papel || 'Líder']; if(pp && document.getElementById(pp)) document.getElementById(pp).checked = true;
+  document.getElementById('nuBoasVindas').checked = false;
+  t.querySelectorAll('.nu-nav .us-btn--primary[type=submit]').forEach(b => { b.textContent = 'Salvar alterações'; });
+  nuIr(0);
 }
+function nuSairEdicao(){
+  if(!window.nuEdit) return;
+  window.nuEdit = null;
+  const t = document.getElementById('tabUsNovo'); t.classList.remove('nu-editando');
+  t.querySelector('.masthead h1').textContent = NU_TITULO0[0]; t.querySelector('.masthead p').textContent = NU_TITULO0[1];
+  const voltar = t.querySelector('.us-btn--voltar'); if(voltar.dataset.oc) voltar.setAttribute('onclick', voltar.dataset.oc);
+  t.querySelectorAll('.nu-so-novo').forEach(x => x.classList.remove('nu-so-novo'));
+  t.querySelectorAll('.nu-nav .us-btn--primary[type=submit]').forEach(b => { b.textContent = 'Salvar'; });
+  document.getElementById('usNovoForm').reset();
+  const dr = nuRascunhoGuardado; nuRascunhoGuardado = null;
+  if(dr) setTimeout(() => { try { localStorage.setItem(RC.nu.key, dr); } catch(e){} if(document.getElementById('tabUsNovo').style.display !== 'none' && !window.nuEdit) rcRestaurar('nu'); }, 800);
+}
+(function(){ const _s = switchTab; switchTab = function(name, opts){ if(window.nuEdit && (name !== 'us-novo' || !(opts && opts.edit))) nuSairEdicao(); return _s.call(this, name, opts); }; })();
+function usSalvarEdicao(ev){
+  ev.preventDefault(); const k = window.nuEdit, un = upUsuario(); if(!k || !un) return;
+  const o = {}; UE_CAMPOS.forEach(c => { const el = document.getElementById(c[4]); o[c[1]] = !el ? undefined : (el.type === 'checkbox' ? el.checked : el.value.trim()); });
+  o.nome = (o.nome || '').replace(/\s+/g, ' ');
+  o.papel = nuV('nuPermAdmin') ? 'Administrador' : nuV('nuPermCoord') ? 'Coordenador' : nuV('nuPermMob') ? 'Mobilizador' : 'Líder';
+  if(o.nome.length < 3){ nuIr(0); return nuAviso('Informe o nome do usuário.', true); }
+  if(o.email && !/^\S+@\S+\.\S+$/.test(o.email)){ nuIr(0); return nuAviso('Informe um e-mail válido.', true); }
+  if(o.telefone && o.telefone.replace(/\D/g, '').length < 10){ nuIr(0); return nuAviso('Telefone incompleto. Use DDD + número.', true); }
+  if(personKey(o.nome) !== k && usLista().some(u => personKey(u.nome) === personKey(o.nome) && personKey(u.nome) !== k)){ nuIr(0); return nuAviso('Já existe um usuário com esse nome.', true); }
+  const ed = usEdicoes(), antes = ed[k] || {}, nomeOrig = fmtNome(usLimpaNome(un.nome)), mudou = [];
+  const cur = Object.assign({}, un, { nome:un.nomeExib || nomeOrig, segmento:/sem segmento/i.test(un.segmento || '') ? '' : (un.segmento || '') });
+  UE_CAMPOS.forEach(c => { const a = cur[c[1]], b = o[c[1]]; if(String(a == null || a === false ? '' : a) !== String(b == null || b === false ? '' : b)) mudou.push(c[2]); });
+  if((un.papel || 'Líder') !== o.papel) mudou.push('Cargo');
+  ed[k] = Object.assign({}, antes, o, { nomeExib:o.nome === nomeOrig ? undefined : o.nome, segmento:o.segmento && o.segmento !== 'Sem segmento' ? o.segmento : 'Sem segmento', meta:o.meta ? Number(o.meta) : undefined });
+  delete ed[k].nome;
+  lsS(US_EDIT_KEY, ed); usHistAdd(k, 'Dados editados' + (mudou.length ? ': ' + mudou.slice(0, 6).join(', ') + (mudou.length > 6 ? '…' : '') : ''));
+  avisoTela('Dados do usuário atualizados.'); switchTab('us-perfil'); renderUsPerfil();
+}
+
+/* ===== CEP: preenche o endereço (ViaCEP) ===== */
+const CEP_ALVOS = { nu:{ cep:'nuCep', rua:'nuRua', bairro:'nuBairro', cidade:'nuCidade', estado:'nuEstado', pais:'nuPais', num:'nuNumero', compl:'nuCompl' },
+                    na:{ cep:'naCep', rua:'naRua', bairro:'naBairro', cidade:'naCidade', estado:'naEstado', pais:'naPais', num:'naNumero', compl:'naCompl' } };
+let cepUlt = {};
+async function cepBuscar(pref){
+  const A = CEP_ALVOS[pref], el = document.getElementById(A.cep); if(!el) return;
+  const d = el.value.replace(/\D/g, ''); if(d.length !== 8 || cepUlt[pref] === d) return; cepUlt[pref] = d;
+  el.value = d.slice(0, 5) + '-' + d.slice(5);
+  const msg = (t, erro) => { let m = document.getElementById(A.cep + 'Msg'); if(!m){ m = document.createElement('small'); m.id = A.cep + 'Msg'; m.className = 'vg-sub'; m.setAttribute('role', 'status'); el.insertAdjacentElement('afterend', m); } m.textContent = t; m.style.color = erro ? 'var(--coral)' : ''; };
+  msg('Buscando endereço…');
+  try {
+    const ctl = new AbortController(), tm = setTimeout(() => ctl.abort(), 8000);
+    const r = await fetch('https://viacep.com.br/ws/' + d + '/json/', { signal:ctl.signal }); clearTimeout(tm);
+    const j = await r.json(); if(!r.ok || j.erro) throw new Error('CEP não encontrado');
+    const set = (k, v) => { const e = document.getElementById(A[k]); if(e && v){ e.value = v; e.dispatchEvent(new Event('input', { bubbles:true })); } };
+    set('rua', j.logradouro); set('bairro', j.bairro); set('cidade', j.localidade); set('estado', j.uf); set('pais', 'Brasil');
+    const c = document.getElementById(A.compl); if(c && !c.value && j.complemento) c.value = j.complemento;
+    msg(j.logradouro ? 'Endereço preenchido. Confira e informe o número.' : 'CEP geral da cidade: preencha rua e bairro.');
+    const n = document.getElementById(A.num); if(n && j.logradouro) n.focus();
+  } catch(e){ cepUlt[pref] = null; msg(e.message === 'CEP não encontrado' ? 'CEP não encontrado. Preencha o endereço manualmente.' : 'Não foi possível buscar o CEP agora (sem internet?). Preencha manualmente.', true); }
+}
+document.addEventListener('DOMContentLoaded', () => {
+  Object.keys(CEP_ALVOS).forEach(pref => { const el = document.getElementById(CEP_ALVOS[pref].cep); if(!el) return;
+    el.setAttribute('inputmode', 'numeric'); el.addEventListener('input', () => { if(el.value.replace(/\D/g, '').length === 8) cepBuscar(pref); else cepUlt[pref] = null; }); el.addEventListener('blur', () => cepBuscar(pref)); });
+});
 try {
   render(
     mergeParsed([parseCampaignCSV(DEFAULT_CSV), parseCampaignCSV(DEFAULT_CSV_REGIONAL)]),
@@ -5124,6 +5168,7 @@ function exportUsLocaisCSV(){
     usLocaisLoad().map(u => US_CSV_COLS.map(c => typeof u[c[0]] === 'boolean' ? (u[c[0]] ? 'Sim' : 'Não') : (u[c[0]] == null ? '' : u[c[0]]))));
 }
 function usSalvarNovo(ev){
+  if(window.nuEdit) return usSalvarEdicao(ev);
   ev.preventDefault();
   const v = nuV, nome = v('nuNome').replace(/\s+/g, ' ');
   if(nome.length < 3){ nuIr(0); return nuAviso('Informe o nome completo.', true); }
