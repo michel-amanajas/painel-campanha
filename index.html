@@ -4508,6 +4508,24 @@ function indicadoresRebuild(id){
   const _r = renderUsNovo; renderUsNovo = function(){ const r = _r.apply(this, arguments); indicadoresRebuild('nuPai'); return r; };
   const _a = renderApNovo; renderApNovo = function(){ const r = _a.apply(this, arguments); indicadoresRebuild('naLider'); return r; };
 })();
+
+/* ===== Regiões: só dados atuais (sem o arquivo antigo embutido) ===== */
+regionalDadosAtuais = function(){
+  let locais = []; try { locais = apLocaisLoad(); } catch(e){}
+  const limpa = s => String(s == null ? '' : s).replace(/[;\r\n]+/g, ' ').trim();
+  const cont = arr => { const m = new Map(); arr.forEach(s => { s = limpa(s); if(!s) return; const k = normKey(s), o = m.get(k); if(o) o.n++; else m.set(k, { nome:s, n:1 }); }); return [...m.values()]; };
+  const porQtd = (a, b) => b.n - a.n || a.nome.localeCompare(b.nome, 'pt-BR');
+  const zona = z => { z = limpa(z); if(!z) return ''; const d = z.replace(/\D/g, ''); return d ? 'Zona ' + parseInt(d, 10) : z; };
+  const bairros = cont(locais.map(a => a.bairro)).sort(porQtd), cidades = cont(locais.map(a => a.cidade)).sort(porQtd), zonas = cont(locais.map(a => zona(a.zona))).sort(porQtd);
+  const conf = cont(locais.map(a => { const c = limpa(a.confianca); return c === '' ? 'N/A' : c; })).sort((a, b) => { const x = parseFloat(a.nome), y = parseFloat(b.nome); return (isNaN(x) ? 99 : x) - (isNaN(y) ? 99 : y); });
+  const sec = (t, h, rows) => '--- ' + t + ' ---\n' + h + ';Quantidade\n' + rows.map(r => r.nome + ';' + r.n).join('\n') + (rows.length ? '\n' : '') + '\n';
+  const txt = sec('Por Bairro', 'Bairro', bairros) + sec('Por Cidade', 'Cidade', cidades) + sec('Por Zona', 'Zona', zonas) + sec('Confiança', 'Nível', conf) + 'Total de Apoiadores;' + locais.length + '\n';
+  const m = MUNICIPIO_BAIRRO_MAP;
+  locais.forEach(a => { const b = limpa(a.bairro), c = limpa(a.cidade);
+    if(b && c){ const kb = normKey(b); (m.bairroToCidades[kb] = m.bairroToCidades[kb] || []); if(m.bairroToCidades[kb].indexOf(c) < 0) m.bairroToCidades[kb].push(c);
+      (m.cidadeToBairros[c] = m.cidadeToBairros[c] || []); if(!m.cidadeToBairros[c].some(x => normKey(x) === kb)) m.cidadeToBairros[c].push(b); } });
+  return parseCampaignCSV(txt);
+};
 try {
   render(
     mergeParsed([parseCampaignCSV(DEFAULT_CSV), parseCampaignCSV(DEFAULT_CSV_REGIONAL)]),
@@ -6721,7 +6739,7 @@ function handleRegionalFiles(fileList){
 }
 
 try {
-  renderRegional(regionalDadosAtuais(), 'supporters_by_region_20260826_1805.csv');
+  renderRegional(regionalDadosAtuais(), 'dados atuais');
   try { regUltAssin = apLocaisLoad().length; } catch(e){}
 } catch (err) {
   console.error('Falha ao renderizar o Painel Regional:', err);
