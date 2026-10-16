@@ -4462,6 +4462,53 @@ document.addEventListener('click', e => {
 });
 document.addEventListener('input', e => { const t = e.target; if(!t || !t.id) return;
   ['nu', 'na'].forEach(P => { if(['Nome', 'Whats', 'Email', 'Nasc'].some(s => t.id === P + s)){ DUP.ok[P] = false; dupCaixa(P, null); } }); });
+
+/* ===== WhatsApp no padrão +55(96) 99999-9999 (cadastro de usuário) ===== */
+function foneNacional(v, bruto){ let d = String(v || '').replace(/\D/g, ''); if(d.indexOf('55') === 0 && (bruto || d.length > 11)) d = d.slice(2); return d.slice(0, 11); }
+function foneFmt(n){
+  if(!n) return '';
+  let o = '+55(' + n.slice(0, 2); if(n.length < 2) return o;
+  o += ')'; if(n.length > 2) o += ' ' + (n.length > 10 ? n.slice(2, 7) + '-' + n.slice(7) : n.length > 6 ? n.slice(2, 6) + '-' + n.slice(6) : n.slice(2));
+  return o;
+}
+function foneAplicar(el){ const n = foneNacional(el.value, /^\s*\+/.test(el.value)); el.value = foneFmt(n); }
+document.addEventListener('DOMContentLoaded', () => {
+  const el = document.getElementById('nuWhats'); if(!el) return;
+  el.placeholder = 'Ex: +55(96) 99999-9999'; el.maxLength = 20; el.setAttribute('inputmode', 'tel');
+  let prev = '';
+  el.addEventListener('focus', () => { if(!el.value) { el.value = '+55(96) '; prev = el.value; } });
+  el.addEventListener('input', ev => {
+    const antes = foneNacional(prev, /^\s*\+/.test(prev));
+    let n = foneNacional(el.value, /^\s*\+/.test(el.value) || el.value.replace(/\D/g, '').indexOf('55') === 0 && el.value.replace(/\D/g, '').length > 11);
+    if(ev.inputType === 'deleteContentBackward' && n === antes) n = n.slice(0, -1);
+    el.value = foneFmt(n); prev = el.value;
+  });
+  el.addEventListener('paste', ev => { const t = (ev.clipboardData || window.clipboardData).getData('text'); ev.preventDefault(); const d = t.replace(/\D/g, ''); el.value = foneFmt(foneNacional(d, /^\s*\+/.test(t) || d.length > 11)); prev = el.value; });
+  el.addEventListener('blur', () => { if(foneNacional(el.value, true).length <= 2){ el.value = ''; prev = ''; } else { foneAplicar(el); prev = el.value; } });
+});
+(function(){ const _ea = usEditarAbrir; usEditarAbrir = function(){ const r = _ea.apply(this, arguments); const el = document.getElementById('nuWhats'); if(el && el.value.replace(/\D/g, '').length >= 10) foneAplicar(el); return r; }; })();
+maskTel = function(v){ let d = String(v || '').replace(/\D/g, ''); if(d.length > 11 && d.indexOf('55') === 0) d = d.slice(2); if(d.length < 6) return '••••'; return d.slice(0, 2) + ' ' + '•••••' + '-••' + d.slice(-2); };
+
+/* ===== Indicado por: candidato, coordenadores, líderes e demais usuários ===== */
+function indicadoresRebuild(id){
+  const s = document.getElementById(id); if(!s) return;
+  if(id === 'naLider' && typeof ehLider === 'function' && ehLider()) return;
+  const cur = s.value, grupos = { Coordenador:[], 'Líder':[], Outros:[] }, vistos = new Set([personKey('Jorge Amanajás')]);
+  usLista().forEach(u => { const k = personKey(u.nome); if(!k || vistos.has(k)) return; vistos.add(k);
+    const pap = u.papel || 'Líder', g = grupos[pap] ? pap : 'Outros';
+    grupos[g].push({ v:u.nome, t:fmtNome(usLimpaNome(u.nome)) + (g === 'Outros' ? ' (' + pap + ')' : '') }); });
+  s.innerHTML = '';
+  const og = (rot, arr) => { if(!arr.length) return; const o = document.createElement('optgroup'); o.label = rot;
+    arr.sort((a, b) => a.t.localeCompare(b.t, 'pt-BR')).forEach(x => o.appendChild(new Option(x.t, x.v))); s.appendChild(o); };
+  s.add(new Option('Jorge Amanajás', 'Jorge Amanajás'));
+  og('Coordenadores', grupos.Coordenador); og('Líderes', grupos['Líder']); og('Outros usuários', grupos.Outros);
+  if(cur && !Array.from(s.options).some(o => o.value === cur)) s.add(new Option(cur, cur));
+  s.value = cur || 'Jorge Amanajás';
+}
+(function(){
+  const _r = renderUsNovo; renderUsNovo = function(){ const r = _r.apply(this, arguments); indicadoresRebuild('nuPai'); return r; };
+  const _a = renderApNovo; renderApNovo = function(){ const r = _a.apply(this, arguments); indicadoresRebuild('naLider'); return r; };
+})();
 try {
   render(
     mergeParsed([parseCampaignCSV(DEFAULT_CSV), parseCampaignCSV(DEFAULT_CSV_REGIONAL)]),
