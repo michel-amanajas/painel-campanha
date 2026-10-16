@@ -1202,6 +1202,14 @@ function truncateText(ctx, text, maxWidth){
   .dm-prio{display:inline-block; font-size:var(--fs-1); font-weight:600; padding:2px 8px; border-radius:999px; background:var(--ov-2); color:var(--text); margin-right:var(--sp-2);}
   .dm-prio.alta{background:var(--coral-dim); color:var(--coral);}
   .dm-card .fx-btns button{font-size:var(--fs-2);}
+
+  .up-dlg--wide{width:min(720px,94vw); max-height:90vh; overflow:auto;}
+  .ue-tabs{display:flex; gap:var(--sp-2); margin:var(--sp-3) 0;}
+  .ue-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:var(--sp-3);}
+  .ue-grid .full{grid-column:1/-1;}
+  .ue-grid label{display:block; font-size:var(--fs-2); font-weight:600;}
+  .ue-grid .filter-select{width:100%; min-width:0; margin-top:4px;}
+  .ue-grid .ue-chk{display:flex; align-items:center; gap:var(--sp-2); font-weight:400;}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 </head>
@@ -1998,15 +2006,10 @@ function truncateText(ctx, text, maxWidth){
     </section>
   </div>
 
-  <dialog id="upEditDlg" class="up-dlg"><form id="upEditForm" method="dialog">
+  <dialog id="upEditDlg" class="up-dlg up-dlg--wide"><form id="upEditForm" method="dialog">
     <h3>Editar usuário</h3>
-    <label class="um-f"><span>Nome</span><input id="ueNome" class="filter-select" disabled></label>
-    <label class="um-f"><span>Cargo</span><select id="uePapel" class="filter-select"><option>Líder</option><option>Coordenador</option><option>Administrador</option></select></label>
-    <label class="um-f"><span>Telefone / WhatsApp</span><input id="ueTel" class="filter-select" placeholder="(96) 99999-9999" maxlength="20"></label>
-    <label class="um-f"><span>E-mail</span><input id="ueEmail" type="email" class="filter-select" maxlength="120"></label>
-    <label class="um-f"><span>Segmento</span><input id="ueSeg" class="filter-select" maxlength="80"></label>
-    <label class="um-f"><span>Bairro</span><input id="ueBairro" class="filter-select" maxlength="80"></label>
-    <label class="um-f"><span>Meta de apoiadores</span><input id="ueMeta" type="number" min="0" class="filter-select"></label>
+    <div class="ue-tabs" role="tablist" aria-label="Etapas da edição"><button type="button" class="nu-tab active" role="tab" data-ue="0">Básico</button><button type="button" class="nu-tab" role="tab" data-ue="1">Endereço</button><button type="button" class="nu-tab" role="tab" data-ue="2">Detalhes</button></div>
+    <div id="ueCorpo"></div>
     <div class="up-dlg-b"><button type="button" class="us-btn" id="ueCancelar">Cancelar</button><button type="submit" class="us-btn us-btn--primary">Salvar</button></div>
   </form></dialog>
   <dialog id="upConfDlg" class="up-dlg"><form method="dialog"><h3 id="ucTitulo"></h3><p id="ucTexto" class="vg-sub" style="font-size:14px;line-height:1.5"></p>
@@ -3448,7 +3451,7 @@ const upWaLink = tel => { const d = String(tel || '').replace(/\D/g, ''); if(!d)
 function renderUsPerfil(){
   const u = upUsuario();
   if(!u){ switchTab('us-todos'); return; }
-  const k = usPerfilKey, rep = USER_REPORTS[k] || {}, perf = rep.perf || {}, nome = fmtNome(usLimpaNome(u.nome));
+  const k = usPerfilKey, rep = USER_REPORTS[k] || {}, perf = rep.perf || {}, nome = u.nomeExib || fmtNome(usLimpaNome(u.nome));
   document.getElementById('upTitulo').textContent = 'Perfil do usuário ' + nome;
   document.getElementById('upSub').textContent = 'Visualize as informações do usuário ' + nome + '.';
   const wpp = document.getElementById('upWpp'); wpp.innerHTML = US_WA + 'Abrir WhatsApp'; wpp.disabled = !u.telefone; wpp.title = u.telefone ? '' : 'Este usuário não tem telefone cadastrado';
@@ -3581,17 +3584,26 @@ function upLigar(){
       usHistAdd(k, 'Usuário removido'); usPerfilKey = null; avisoTela('Usuário removido.'); switchTab('us-todos');
     }); };
   // editar
-  $('upEditar').onclick = () => { const u = upUsuario(); if(!u) return; const g = id => $(id);
-    g('ueNome').value = fmtNome(usLimpaNome(u.nome)); g('uePapel').value = u.papel || 'Líder'; g('ueTel').value = u.telefone || ''; g('ueEmail').value = u.email || '';
-    g('ueSeg').value = /sem segmento/i.test(u.segmento || '') ? '' : (u.segmento || ''); g('ueBairro').value = u.bairro || ''; g('ueMeta').value = Number(u.meta) > 0 ? u.meta : (((USER_REPORTS[usPerfilKey] || {}).perf || {}).meta || '');
-    $('upEditDlg').showModal(); };
+  $('upEditar').onclick = () => { const u = upUsuario(); if(!u) return;
+    const base = Object.assign({}, u, { nome:u.nomeExib || fmtNome(usLimpaNome(u.nome)), segmento:/sem segmento/i.test(u.segmento || '') ? '' : (u.segmento || ''),
+      meta:Number(u.meta) > 0 ? u.meta : (((USER_REPORTS[usPerfilKey] || {}).perf || {}).meta || '') });
+    ueMontar(base); $('upEditDlg').showModal(); };
+  $('upEditDlg').addEventListener('click', e => { const b = e.target.closest('[data-ue]'); if(b) ueEtapa(Number(b.dataset.ue)); });
   $('ueCancelar').onclick = () => $('upEditDlg').close();
   $('upEditForm').addEventListener('submit', e => {
-    e.preventDefault(); const k = usPerfilKey, ed = usEdicoes(), g = id => $(id).value.trim();
-    const tel = g('ueTel'); if(tel && tel.replace(/\D/g, '').length < 10){ avisoTela('Telefone incompleto. Use DDD + número.', 'erro'); return; }
-    const mail = g('ueEmail'); if(mail && !/^\S+@\S+\.\S+$/.test(mail)){ avisoTela('Informe um e-mail válido.', 'erro'); return; }
-    ed[k] = { papel:$('uePapel').value, telefone:tel, email:mail, segmento:g('ueSeg') || 'Sem segmento', bairro:g('ueBairro'), meta:g('ueMeta') ? Number(g('ueMeta')) : undefined };
-    lsS(US_EDIT_KEY, ed); usHistAdd(k, 'Dados editados'); $('upEditDlg').close(); avisoTela('Dados do usuário atualizados.'); renderUsPerfil();
+    e.preventDefault(); const k = usPerfilKey, ed = usEdicoes(), un = upUsuario();
+    const val = c => { const el = $('ue_' + c[1]); if(!el) return undefined; const t = ueTipoReal(c); return t === 'check' ? el.checked : el.value.trim(); };
+    const o = {}; UE_CAMPOS.forEach(c => { o[c[1]] = val(c); });
+    if(!o.nome || o.nome.length < 3){ ueEtapa(0); avisoTela('Informe o nome do usuário.', 'erro'); return; }
+    const tel = o.telefone; if(tel && tel.replace(/\D/g, '').length < 10){ ueEtapa(0); avisoTela('Telefone incompleto. Use DDD + número.', 'erro'); return; }
+    if(o.email && !/^\S+@\S+\.\S+$/.test(o.email)){ ueEtapa(0); avisoTela('Informe um e-mail válido.', 'erro'); return; }
+    const antes = ed[k] || {}, mudou = [];
+    const cur = Object.assign({}, un, { nome:un.nomeExib || fmtNome(usLimpaNome(un.nome)), segmento:/sem segmento/i.test(un.segmento || '') ? '' : (un.segmento || '') });
+    UE_CAMPOS.forEach(c => { const a = cur[c[1]], b = o[c[1]]; if(String(a == null || a === false ? '' : a) !== String(b == null || b === false ? '' : b)) mudou.push(c[2]); });
+    const nomeOrig = fmtNome(usLimpaNome(un.nome));
+    ed[k] = Object.assign({}, antes, o, { nomeExib:o.nome === nomeOrig ? undefined : o.nome, segmento:o.segmento || 'Sem segmento', meta:o.meta ? Number(o.meta) : undefined });
+    delete ed[k].nome;
+    lsS(US_EDIT_KEY, ed); usHistAdd(k, 'Dados editados' + (mudou.length ? ': ' + mudou.slice(0, 6).join(', ') + (mudou.length > 6 ? '…' : '') : '')); $('upEditDlg').close(); avisoTela('Dados do usuário atualizados.'); renderUsPerfil();
   });
   // tabela de apoiadores
   $('upBuscaForm').addEventListener('submit', e => { e.preventDefault(); UP.q = $('upQ').value; UP.pag = 0; upTabela(upApoiadores(usPerfilKey)); });
@@ -4155,6 +4167,38 @@ document.addEventListener('DOMContentLoaded', () => {
     else if(t.dataset.dmdel){ if(fxConf !== t.dataset.dmdel){ fxConf = t.dataset.dmdel; dmRender(); } else { dmGravar(dmLer().filter(x => x.id !== fxConf)); fxConf = null; avisoTela('Demanda excluída.'); dmRender(); } }
   });
 });
+
+/* ===== Editar usuário: todos os campos e etapas ===== */
+const UE_CAMPOS = [
+  [0, 'nome', 'Nome', 'text', 'nuNome', 1], [0, 'apelido', 'Apelido', 'text', 'nuApelido'], [0, 'papel', 'Cargo', 'papel'], [0, 'meta', 'Meta de apoiadores', 'number', 'nuMeta'],
+  [0, 'email', 'E-mail', 'text', 'nuEmail'], [0, 'telefone', 'Telefone / WhatsApp', 'text', 'nuWhats'], [0, 'segmento', 'Segmento', 'text', 'nuSeg'], [0, 'genero', 'Gênero', 'select', 'nuGenero'],
+  [0, 'nascimento', 'Data de nascimento', 'date', 'nuNasc'], [0, 'pai', 'Indicado por', 'select', 'nuPai'], [0, 'relacao', 'Relação', 'select', 'nuRelacao'], [0, 'coordenador', 'Coordenador', 'select', 'nuCoord'],
+  [1, 'cep', 'CEP', 'text', 'nuCep'], [1, 'rua', 'Rua', 'text', 'nuRua'], [1, 'numero', 'Número', 'text', 'nuNumero'], [1, 'bairro', 'Bairro', 'text', 'nuBairro'], [1, 'cidade', 'Cidade', 'text', 'nuCidade'],
+  [1, 'estado', 'Estado', 'select', 'nuEstado'], [1, 'pais', 'País', 'text', 'nuPais'], [1, 'complemento', 'Complemento', 'text', 'nuCompl'], [1, 'sede', 'Sede de fiscalização', 'text', 'nuSede'], [1, 'zona', 'Zona', 'text', 'nuZona'], [1, 'secao', 'Seção', 'text', 'nuSecao'],
+  [2, 'mae', 'Nome da mãe', 'text', 'nuMae'], [2, 'paiNome', 'Nome do pai', 'text', 'nuPaiNome'], [2, 'profissao', 'Profissão', 'text', 'nuProf'], [2, 'estadoCivil', 'Estado civil', 'select', 'nuEstCivil'], [2, 'escolaridade', 'Escolaridade', 'select', 'nuEscol'],
+  [2, 'religiao', 'Religião', 'text', 'nuRelig'], [2, 'dependentes', 'Dependentes', 'number', 'nuDep'], [2, 'estuda', 'Estuda atualmente', 'check', 'nuEstuda'], [2, 'trabalha', 'Trabalha atualmente', 'check', 'nuTrabalha'], [2, 'transporte', 'Transporte', 'text', 'nuTransp'],
+  [2, 'instagram', 'Instagram', 'text', 'nuInsta'], [2, 'twitter', 'Twitter / X', 'text', 'nuTw'], [2, 'facebook', 'Facebook', 'text', 'nuFb'], [2, 'obs', 'Observações', 'area', 'nuObs']
+];
+function ueTipoReal(c){ if(c[3] === 'papel') return 'papel'; const el = c[4] && document.getElementById(c[4]); if(!el) return c[3] === 'select' ? 'text' : c[3]; if(el.tagName === 'SELECT') return 'select'; if(el.tagName === 'TEXTAREA') return 'area'; if(el.type === 'checkbox') return 'check'; return el.type === 'number' || el.type === 'date' ? el.type : 'text'; }
+function ueMontar(u){
+  const g = (k) => u[k] == null ? '' : u[k];
+  const corpo = [0, 1, 2].map(et => '<div class="ue-grid" data-ueet="' + et + '"' + (et ? ' hidden' : '') + '>' + UE_CAMPOS.filter(c => c[0] === et).map(c => {
+    const id = 'ue_' + c[1], t = ueTipoReal(c), val = g(c[1]), lb = escapeHtml(c[2]);
+    if(t === 'check') return '<label class="ue-chk"><input type="checkbox" id="' + id + '"' + (val === true || val === 'on' || val === '1' || val === 1 ? ' checked' : '') + '> ' + lb + '</label>';
+    if(t === 'area') return '<label class="full">' + lb + '<textarea id="' + id + '" class="filter-select" rows="4" maxlength="800">' + escapeHtml(val) + '</textarea></label>';
+    if(t === 'papel') return '<label>' + lb + '<select id="' + id + '" class="filter-select">' + ['Líder', 'Coordenador', 'Administrador', 'Mobilizador'].map(o => '<option' + (o === (val || 'Líder') ? ' selected' : '') + '>' + o + '</option>').join('') + '</select></label>';
+    if(t === 'select'){ const src = document.getElementById(c[4]); let ops = src ? Array.from(src.options).map(o => [o.value, o.textContent]) : [];
+      if(val && !ops.some(o => o[0] === String(val) || o[1] === String(val))) ops.push([String(val), String(val)]);
+      return '<label>' + lb + '<select id="' + id + '" class="filter-select">' + ops.map(o => '<option value="' + escapeHtml(o[0]) + '"' + (o[0] === String(val) || (!val && o[0] === '') ? ' selected' : '') + '>' + escapeHtml(o[1]) + '</option>').join('') + '</select></label>'; }
+    return '<label>' + lb + '<input id="' + id + '" class="filter-select" type="' + (t === 'number' || t === 'date' ? t : 'text') + '" value="' + escapeHtml(val) + '" maxlength="140"></label>';
+  }).join('') + '</div>').join('');
+  document.getElementById('ueCorpo').innerHTML = corpo;
+  ueEtapa(0);
+}
+function ueEtapa(n){
+  document.querySelectorAll('#ueCorpo [data-ueet]').forEach(d => { d.hidden = Number(d.dataset.ueet) !== n; });
+  document.querySelectorAll('.ue-tabs .nu-tab').forEach(b => { const on = Number(b.dataset.ue) === n; b.classList.toggle('active', on); b.setAttribute('aria-selected', on ? 'true' : 'false'); });
+}
 try {
   render(
     mergeParsed([parseCampaignCSV(DEFAULT_CSV), parseCampaignCSV(DEFAULT_CSV_REGIONAL)]),
@@ -4978,7 +5022,7 @@ function usFiltrados(){
   const q = normKey(usBusca), pa = document.getElementById('usPapel').value, sg = document.getElementById('usSeg').value,
     bb = document.getElementById('usBairro').value, ac = document.getElementById('usAcesso').value, rev = usRev();
   return usLista().filter(u => {
-    if(q && !normKey(u.nome + ' ' + u.telefone + ' ' + u.email).includes(q)) return false;
+    if(q && !normKey(u.nome + ' ' + (u.nomeExib || '') + ' ' + u.telefone + ' ' + u.email).includes(q)) return false;
     if(pa !== 'all' && u.papel !== pa) return false;
     if(sg !== 'all' && u.segmento !== sg) return false;
     if(bb !== 'all' && u.bairro !== bb) return false;
@@ -4993,8 +5037,8 @@ function usLinhas(f){
   const rev = usRev();
   return f.map(u => {
     const k = personKey(u.nome), ap = u.apelido || usApelido(u.nome), r = rev.has(k);
-    return `<tr><td class="no-print"><label class="ck-l"><input type="checkbox" data-k="${escapeHtml(k)}" ${usSel.has(k) ? 'checked' : ''} aria-label="Selecionar ${escapeHtml(fmtNome(usLimpaNome(u.nome)))}"></label></td>` +
-      `<td><button type="button" class="us-nome us-nome-link" data-perfil="${escapeHtml(k)}" title="Abrir o perfil">${escapeHtml(fmtNome(usLimpaNome(u.nome)))}</button>${ap ? `<span class="us-apelido">(${escapeHtml(ap)})</span>` : ''}${u.local ? ' <span class="ap-tag pend">novo</span>' : ''}${r ? `<br><button type="button" class="us-rev" data-rev="${escapeHtml(k)}" title="Clique para restaurar o acesso">Acesso revogado</button>` : ''}</td>` +
+    return `<tr><td class="no-print"><label class="ck-l"><input type="checkbox" data-k="${escapeHtml(k)}" ${usSel.has(k) ? 'checked' : ''} aria-label="Selecionar ${escapeHtml(u.nomeExib || fmtNome(usLimpaNome(u.nome)))}"></label></td>` +
+      `<td><button type="button" class="us-nome us-nome-link" data-perfil="${escapeHtml(k)}" title="Abrir o perfil">${escapeHtml(u.nomeExib || fmtNome(usLimpaNome(u.nome)))}</button>${ap ? `<span class="us-apelido">(${escapeHtml(ap)})</span>` : ''}${u.local ? ' <span class="ap-tag pend">novo</span>' : ''}${r ? `<br><button type="button" class="us-rev" data-rev="${escapeHtml(k)}" title="Clique para restaurar o acesso">Acesso revogado</button>` : ''}</td>` +
       `<td>${telHtml(u.telefone, US_WA)}</td><td class="mut">${escapeHtml(u.email || '')}</td><td class="mut">${escapeHtml(u.genero || '—')}</td><td class="mut">${u.idade == null ? '—' : u.idade}</td>` +
       `<td class="mut">${fmtI(u.convidados)}</td><td class="mut">—</td><td class="mut">${escapeHtml(fmtSeg(u.segmento))}</td></tr>`;
   }).join('') || '<tr><td colspan="9" class="mut">Nenhum usuário encontrado.</td></tr>';
