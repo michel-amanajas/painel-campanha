@@ -9,7 +9,7 @@
 <link rel="icon" href="icon-192.png">
 <script src="config.js" onerror="void 0"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&display=swap" rel="stylesheet">
 <script>
 // ============================================================
 // Mini renderizador de gráficos embutido (substitui a dependência
@@ -1217,6 +1217,95 @@ input.addr-lock{background:var(--bg-soft,rgba(127,127,127,.12));color:var(--txt-
 .dup-aviso{border:1px solid var(--coral);border-left-width:4px;border-radius:10px;padding:12px 14px;margin:0 0 14px;background:var(--surface,transparent);font-size:14px}
 .dup-aviso ul{margin:8px 0 12px;padding-left:20px}
 .dup-aviso .dup-acoes{display:flex;gap:8px;flex-wrap:wrap}
+
+/* ===== Visual v2: floresta, equador e rio ===== */
+:root{
+  --ink:#ECF1ED; --panel:#FFFFFF; --panel-2:#F1F5F2; --line:rgba(14,38,30,.10);
+  --text:#0E1A16; --muted:#586861;
+  --accent:#087448; --accent-dim:rgba(8,116,72,.10); --teal-txt:#087448;
+  --forest:#0B2B22; --forest-2:#123A2E; --sun:#F4B63F;
+  --solid:#0B2B22; --on-solid:#FFFFFF;
+  --radius:20px;
+  --sh-1:0 1px 2px rgba(14,38,30,.05); --sh-2:0 8px 24px -12px rgba(14,38,30,.18); --sh-3:0 22px 48px -18px rgba(14,38,30,.28);
+  --shadow:0 1px 2px rgba(14,38,30,.04), 0 10px 28px -18px rgba(14,38,30,.22);
+  --f-display:'Bricolage Grotesque','Plus Jakarta Sans','Inter',sans-serif;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --ink:#08100D; --panel:#101A16; --panel-2:#16231E; --line:rgba(255,255,255,.08);
+  --text:#E9F1EC; --muted:#93A69C; --accent:#3ED89A; --accent-dim:rgba(62,216,154,.14); --teal-txt:#3ED89A;
+  --forest:#06100C; --forest-2:#0C1C16; --solid:#3ED89A; --on-solid:#062A1B;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 14px 30px -16px rgba(0,0,0,.6);
+} }
+:root[data-theme="dark"]{
+  --ink:#08100D; --panel:#101A16; --panel-2:#16231E; --line:rgba(255,255,255,.08);
+  --text:#E9F1EC; --muted:#93A69C; --accent:#3ED89A; --accent-dim:rgba(62,216,154,.14); --teal-txt:#3ED89A;
+  --forest:#06100C; --forest-2:#0C1C16; --solid:#3ED89A; --on-solid:#062A1B;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 14px 30px -16px rgba(0,0,0,.6);
+}
+body{background:var(--ink)}
+h1,h2,h3,.masthead h1{font-family:var(--f-display)}
+.masthead h1{font-size:clamp(26px,3vw,34px); font-weight:700; letter-spacing:-.025em; line-height:1.12}
+.nu-step h3, .nu-box h3{font-size:16px}
+.main-content .wrap{max-width:1040px; padding:36px 40px 96px}
+
+/* barra lateral escura */
+.sidebar{background:var(--forest); border-right:0; color:rgba(255,255,255,.82); scrollbar-width:thin; scrollbar-color:rgba(255,255,255,.2) transparent}
+.sidebar-account{background:rgba(255,255,255,.07); border-color:rgba(255,255,255,.10); color:#fff; box-shadow:none}
+.sidebar-account small{color:rgba(255,255,255,.62)}
+.sidebar-account .acc-chev{stroke:rgba(255,255,255,.7)}
+.menu-section{text-transform:none; letter-spacing:0; font-size:12px; font-weight:600; color:rgba(255,255,255,.55); padding:18px 14px 6px}
+.menu-item{color:rgba(255,255,255,.82); font-size:15px; font-weight:500; padding:10px 12px; transition:background .15s,color .15s}
+.menu-item:hover{background:rgba(255,255,255,.07); color:#fff}
+.menu-item.active{background:rgba(255,255,255,.10); color:#fff; font-weight:600; box-shadow:inset 3px 0 0 var(--sun)}
+.menu-group.has-active > .menu-parent{color:#fff}
+.submenu{border-left-color:rgba(255,255,255,.14)}
+.submenu-item{color:rgba(255,255,255,.66)}
+.submenu-item:hover{background:rgba(255,255,255,.07); color:#fff}
+.submenu-item.active{background:rgba(255,255,255,.08); color:var(--sun); font-weight:600}
+.sidebar-foot{border-top-color:rgba(255,255,255,.12)}
+.sidebar-foot .theme-toggle, .theme-toggle{color:rgba(255,255,255,.72); border-color:rgba(255,255,255,.14); background:transparent}
+.theme-toggle:hover{border-color:var(--sun); color:#fff}
+.sidebar-toggle{background:rgba(255,255,255,.08); border-color:rgba(255,255,255,.16); color:#fff}
+.menu-item:focus-visible, .submenu-item:focus-visible, .sidebar-account:focus-visible{outline:2px solid var(--sun); outline-offset:2px}
+
+/* cartões e indicadores */
+.panel, .vg-card, .vg-kpi{border-radius:20px; border:1px solid var(--line); box-shadow:var(--shadow)}
+.panel h3, .vg-card h3{font-family:var(--f-display); font-size:18px; font-weight:700; letter-spacing:-.02em}
+.panel h3::before{display:none}
+.vg-kpis{gap:14px}
+.vg-kpi{padding:18px 20px; color:var(--text)}
+.vg-kpi .vg-kpi-i{background:transparent; width:auto; height:auto; color:var(--muted)}
+.vg-kpi-v{font-family:var(--f-display); font-size:34px; font-weight:700; letter-spacing:-.03em; color:var(--text); margin:10px 0 4px}
+.vg-kpi-v small{font-family:'Inter',sans-serif; letter-spacing:0}
+.vg-kpis .vg-kpi:first-child{background:var(--forest); border-color:transparent; color:#fff; box-shadow:0 18px 36px -22px rgba(11,43,34,.7)}
+.vg-kpis .vg-kpi:first-child .vg-kpi-h, .vg-kpis .vg-kpi:first-child .vg-kpi-d, .vg-kpis .vg-kpi:first-child .vg-kpi-v small{color:rgba(255,255,255,.72)}
+.vg-kpis .vg-kpi:first-child .vg-kpi-v{color:var(--sun); font-size:46px}
+.vg-kpis .vg-kpi:first-child .vg-kpi-i{color:var(--sun)}
+
+/* botões, campos e abas */
+.us-btn{font-weight:600; transition:background .15s,border-color .15s,transform .1s}
+.us-btn:active{transform:scale(.98)}
+.us-btn--primary{background:var(--solid); border-color:var(--solid); color:var(--on-solid)}
+.us-btn--primary:hover{filter:brightness(1.12); border-color:var(--solid)}
+.us-btn--voltar{background:transparent; border-color:var(--line); color:var(--text)}
+.us-btn--voltar:hover{border-color:var(--text); background:var(--panel-2)}
+.filter-select, .user-search, .gs-bar input{border-radius:12px; border-color:rgba(14,38,30,.16); background:var(--panel)}
+:root[data-theme="dark"] .filter-select, :root[data-theme="dark"] .user-search{border-color:rgba(255,255,255,.14)}
+.filter-select:focus, .user-search:focus, .gs-bar input:focus{outline:none; border-color:var(--accent); box-shadow:0 0 0 4px var(--accent-dim)}
+.gs-bar input{border-radius:14px; padding-left:18px}
+.nu-tabs{background:var(--panel-2); padding:4px; border-radius:999px; gap:4px}
+.nu-tab{border-color:transparent; background:transparent; color:var(--muted)}
+.nu-tab.active{background:var(--solid); border-color:var(--solid); color:var(--on-solid); box-shadow:var(--sh-1)}
+.nu-box{border-radius:14px}
+
+/* tabelas */
+.us-table th{background:transparent; text-transform:none; letter-spacing:0; font-size:12px; font-weight:600; color:var(--muted); border-bottom:1px solid var(--line)}
+.us-table tbody tr{transition:background .12s}
+.us-table tbody tr:hover{background:var(--ov-1)}
+@media (max-width:820px){ .main-content .wrap{padding:24px 16px 96px} .vg-kpis .vg-kpi:first-child .vg-kpi-v{font-size:40px} }
+
+:root[data-theme="dark"] .vg-kpis .vg-kpi:first-child{background:#0F2A21; border-color:rgba(62,216,154,.28)}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .vg-kpis .vg-kpi:first-child{background:#0F2A21; border-color:rgba(62,216,154,.28)} }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 </head>
