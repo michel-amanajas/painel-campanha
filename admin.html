@@ -1214,6 +1214,10 @@ function truncateText(ctx, text, maxWidth){
 
 input.addr-lock{background:var(--bg-soft,rgba(127,127,127,.12));color:var(--txt-2,inherit);cursor:not-allowed}
 .nu-f select.addr-mun{width:100%}
+
+.dup-aviso{border:1px solid var(--coral);border-left-width:4px;border-radius:10px;padding:12px 14px;margin:0 0 14px;background:var(--surface,transparent);font-size:14px}
+.dup-aviso ul{margin:8px 0 12px;padding-left:20px}
+.dup-aviso .dup-acoes{display:flex;gap:8px;flex-wrap:wrap}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 </head>
@@ -4393,6 +4397,71 @@ document.addEventListener('DOMContentLoaded', () => {
   const _se = nuSairEdicao; nuSairEdicao = function(){ const r = _se.apply(this, arguments); addrLivre.nu = false; addrSync('nu'); return r; };
   const _rr = rcRestaurar; rcRestaurar = function(p){ const r = _rr.apply(this, arguments); addrSync(p); return r; };
 })();
+
+/* ===== Aviso de possível cadastro repetido (apoiadores e usuários) ===== */
+const DUP = { ok:{ nu:false, na:false } };
+const dupFone = s => { let d = String(s || '').replace(/\D/g, ''); if(d.length > 11 && d.indexOf('55') === 0) d = d.slice(2); return d.length >= 10 ? d : ''; };
+const dupEmail = s => String(s || '').trim().toLowerCase();
+function dupNomeParecido(a, b){
+  const ka = normKey(a), kb = normKey(b); if(!ka || !kb) return false; if(ka === kb) return true;
+  const ta = ka.split(' '), tb = kb.split(' ');
+  const igual = (x, y) => x === y || (x.length === 1 && y.indexOf(x) === 0) || (y.length === 1 && x.indexOf(y) === 0);
+  const c = ta.length <= tb.length ? ta : tb, l = ta.length <= tb.length ? tb : ta;
+  if(c.length >= 2 && c.every(t => l.some(x => igual(t, x)))) return true;
+  return Math.min(ka.length, kb.length) >= 8 && geoDist(ka, kb) <= 2;
+}
+function dupPool(){
+  const loc = {}; try { apLocaisLoad().forEach(a => { loc[personKey(a.nome)] = a; }); } catch(e){}
+  const pool = [];
+  try { buildApoiadoresLista().forEach(a => { const l = loc[personKey(a.nome)] || {}; pool.push({ tipo:'Apoiador', nome:a.nome, fone:dupFone(a.whatsapp || l.whatsapp), email:dupEmail(l.email), nasc:l.nascimento || '', resp:a.lider || '' }); }); } catch(e){}
+  try { usLista().forEach(u => pool.push({ tipo:'Usuário', nome:u.nome, fone:dupFone(u.telefone), email:dupEmail(u.email), nasc:u.nascimento || '', resp:u.papel || '' })); } catch(e){}
+  return pool;
+}
+function dupBuscar(n, ignorar){
+  const f = dupFone(n.fone), e = dupEmail(n.email), res = [];
+  dupPool().forEach(p => {
+    if(ignorar && personKey(p.nome) === ignorar) return;
+    if(personKey(p.nome) === personKey(n.nome)) return; // nome idêntico já é barrado pelo cadastro
+    const m = [];
+    if(f && p.fone === f) m.push('mesmo WhatsApp'); if(e && p.email === e) m.push('mesmo e-mail');
+    if(dupNomeParecido(n.nome, p.nome)) m.push('nome parecido'); if(n.nasc && p.nasc && n.nasc === p.nasc) m.push('mesma data de nascimento');
+    if(m.length) res.push({ p, m });
+  });
+  res.sort((a, b) => b.m.length - a.m.length); return res.slice(0, 5);
+}
+function dupCaixa(pref, res){
+  const f = document.getElementById(RC[pref].form), passo = f.querySelector('.nu-step[data-step="0"]'); let box = passo.querySelector('.dup-aviso'); if(box) box.remove(); if(!res) return;
+  box = document.createElement('div'); box.className = 'dup-aviso'; box.setAttribute('role', 'alert'); box.tabIndex = -1;
+  box.innerHTML = '<b>Possível cadastro repetido</b><ul>' + res.map(r => '<li><b>' + escapeHtml(r.p.nome) + '</b> (' + r.p.tipo + (r.p.resp ? ' · ' + escapeHtml(r.p.resp) : '') + '): ' + r.m.join(', ') + '</li>').join('') + '</ul>' +
+    '<div class="dup-acoes"><button type="button" class="us-btn us-btn--primary" data-dupok="' + pref + '">É outra pessoa, cadastrar mesmo assim</button> <button type="button" class="us-btn" data-dupno="' + pref + '">Revisar os dados</button></div>';
+  passo.insertBefore(box, passo.firstChild); box.focus();
+}
+function dupGuarda(pref, orig){
+  return function(ev){
+    if(!DUP.ok[pref]){
+      const g = id => ((document.getElementById(id) || {}).value || ''), P = pref;
+      const n = { nome:g(P + 'Nome').replace(/\s+/g, ' ').trim(), fone:g(P + 'Whats'), email:g(P + 'Email'), nasc:g(P + 'Nasc') };
+      let ign = null, mudou = true;
+      if(P === 'nu' && window.nuEdit){ ign = window.nuEdit; const un = upUsuario() || {};
+        mudou = personKey(n.nome) !== personKey(un.nomeExib || fmtNome(usLimpaNome(un.nome || ''))) || dupFone(n.fone) !== dupFone(un.telefone) || dupEmail(n.email) !== dupEmail(un.email); }
+      if(mudou && n.nome.length >= 3){
+        const res = dupBuscar(n, ign);
+        if(res.length){ ev.preventDefault(); (P === 'nu' ? nuIr : naIr)(0); dupCaixa(P, res); return; }
+      }
+    }
+    DUP.ok[pref] = false; dupCaixa(pref, null);
+    return orig.apply(this, arguments);
+  };
+}
+apSalvarNovo = dupGuarda('na', apSalvarNovo);
+usSalvarNovo = dupGuarda('nu', usSalvarNovo);
+document.addEventListener('click', e => {
+  const ok = e.target.closest('[data-dupok]'), no = e.target.closest('[data-dupno]');
+  if(ok){ const P = ok.dataset.dupok; DUP.ok[P] = true; document.getElementById(RC[P].form).requestSubmit(); }
+  if(no){ const P = no.dataset.dupno; dupCaixa(P, null); const el = document.getElementById(P + 'Nome'); if(el) el.focus(); }
+});
+document.addEventListener('input', e => { const t = e.target; if(!t || !t.id) return;
+  ['nu', 'na'].forEach(P => { if(['Nome', 'Whats', 'Email', 'Nasc'].some(s => t.id === P + s)){ DUP.ok[P] = false; dupCaixa(P, null); } }); });
 try {
   render(
     mergeParsed([parseCampaignCSV(DEFAULT_CSV), parseCampaignCSV(DEFAULT_CSV_REGIONAL)]),
