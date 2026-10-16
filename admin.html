@@ -4235,6 +4235,7 @@ async function cepBuscar(pref){
     const set = (k, v) => { const e = document.getElementById(A[k]); if(e && v){ e.value = v; e.dispatchEvent(new Event('input', { bubbles:true })); } };
     set('rua', j.logradouro); set('bairro', j.bairro); set('cidade', j.localidade); set('estado', j.uf); set('pais', 'Brasil');
     const c = document.getElementById(A.compl); if(c && !c.value && j.complemento) c.value = j.complemento;
+    ['bairro', 'cidade'].forEach(k => { const e = document.getElementById(A[k]); if(e) geoChecar(e, k); });
     msg(j.logradouro ? 'Endereço preenchido. Confira e informe o número.' : 'CEP geral da cidade: preencha rua e bairro.');
     const n = document.getElementById(A.num); if(n && j.logradouro) n.focus();
   } catch(e){ cepUlt[pref] = null; msg(e.message === 'CEP não encontrado' ? 'CEP não encontrado. Preencha o endereço manualmente.' : 'Não foi possível buscar o CEP agora (sem internet?). Preencha manualmente.', true); }
@@ -4271,6 +4272,57 @@ function regionalAtualizar(){
   try { renderRegional(regionalDadosAtuais(), 'dados atuais'); applyRegionalFilter(); } catch(e){ console.error('Falha ao atualizar Regiões:', e); }
 }
 (function(){ const _s = switchTab; switchTab = function(name, opts){ const r = _s.call(this, name, opts); if(name === 'regional') regionalAtualizar(); return r; }; })();
+
+/* ===== Padronização de bairro e cidade (evita duplicidade) ===== */
+let _geoCat = null;
+function geoCatalogo(){
+  if(_geoCat) return _geoCat;
+  const b = new Map(), c = new Map(), put = (m, s) => { s = (s || '').trim(); if(!s) return; const k = normKey(s); if(k && !m.has(k)) m.set(k, s); };
+  try { const d = parseCampaignCSV(DEFAULT_CSV_REGIONAL); d.sections.forEach(s => { const t = s.title.toLowerCase(); if(t.includes('bairro')) s.rows.forEach(r => put(b, r[0])); if(t.includes('cidade')) s.rows.forEach(r => put(c, r[0])); }); } catch(e){}
+  try { const m = MUNICIPIO_BAIRRO_MAP.cidadeToBairros || {}; Object.keys(m).forEach(ci => { put(c, ci); (m[ci] || []).forEach(x => put(b, x)); }); } catch(e){}
+  try { usLista().forEach(u => put(b, u.bairro)); } catch(e){}
+  return (_geoCat = { bairro:b, cidade:c });
+}
+function geoDist(a, b){
+  if(a === b) return 0; if(Math.abs(a.length - b.length) > 3) return 9;
+  const m = a.length, n = b.length; let prev = Array.from({ length:n + 1 }, (_, j) => j);
+  for(let i = 1; i <= m; i++){ const cur = [i]; for(let j = 1; j <= n; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); prev = cur; }
+  return prev[n];
+}
+function geoAvaliar(tipo, valor){
+  const v = (valor || '').trim(); if(!v) return { st:'vazio' };
+  const cat = geoCatalogo()[tipo], k = normKey(v);
+  if(cat.has(k)) return { st:'igual', nome:cat.get(k) };
+  let melhor = null, dmin = 99;
+  cat.forEach((nome, kk) => { const lim = k.length <= 5 ? 1 : 2; const d = geoDist(k, kk); const cont = k.length >= 5 && kk.length >= 5 && (kk.includes(k) || k.includes(kk)); const dd = cont ? Math.min(d, lim) : d; if(dd <= lim && dd < dmin){ dmin = dd; melhor = nome; } });
+  return melhor ? { st:'parecido', nome:melhor } : { st:'novo' };
+}
+function geoMsg(el, html){
+  let m = document.getElementById(el.id + 'Geo');
+  if(!html){ if(m) m.remove(); return; }
+  if(!m){ m = document.createElement('small'); m.id = el.id + 'Geo'; m.className = 'vg-sub'; m.setAttribute('role', 'status'); el.insertAdjacentElement('afterend', m); }
+  m.innerHTML = html;
+}
+function geoChecar(el, tipo){
+  const r = geoAvaliar(tipo, el.value);
+  if(r.st === 'igual'){ if(el.value !== r.nome){ el.value = r.nome; el.dispatchEvent(new Event('input', { bubbles:true })); } geoMsg(el, ''); }
+  else if(r.st === 'parecido'){ geoMsg(el, 'Já existe <b>' + escapeHtml(r.nome) + '</b>. <button type="button" class="nu-link" data-geouse="' + escapeHtml(r.nome) + '" data-geoid="' + el.id + '">Usar esse nome</button>'); }
+  else if(r.st === 'novo'){ geoMsg(el, tipo === 'bairro' ? 'Bairro novo na lista. Confira a grafia.' : 'Cidade nova na lista. Confira a grafia.'); }
+  else geoMsg(el, '');
+}
+document.addEventListener('DOMContentLoaded', () => {
+  const dl = document.createElement('datalist'); dl.id = 'geoCidadeList'; document.body.appendChild(dl);
+  const dlb = document.getElementById('nuBairroList');
+  const preencher = () => { const cat = geoCatalogo(); dl.innerHTML = [...cat.cidade.values()].sort((a, b) => a.localeCompare(b, 'pt-BR')).map(c => '<option value="' + escapeHtml(c) + '">').join('');
+    if(dlb && !dlb.children.length) dlb.innerHTML = [...cat.bairro.values()].sort((a, b) => a.localeCompare(b, 'pt-BR')).map(c => '<option value="' + escapeHtml(c) + '">').join(''); };
+  [['nuBairro', 'bairro'], ['naBairro', 'bairro'], ['nuCidade', 'cidade'], ['naCidade', 'cidade']].forEach(([id, tipo]) => {
+    const el = document.getElementById(id); if(!el) return; el.setAttribute('autocomplete', 'off');
+    el.setAttribute('list', tipo === 'cidade' ? 'geoCidadeList' : 'nuBairroList');
+    el.addEventListener('focus', preencher, { once:true }); el.addEventListener('blur', () => geoChecar(el, tipo));
+    el.addEventListener('input', () => geoMsg(el, ''));
+  });
+  document.addEventListener('click', e => { const b = e.target.closest('[data-geouse]'); if(!b) return; const el = document.getElementById(b.dataset.geoid); el.value = b.dataset.geouse; el.dispatchEvent(new Event('input', { bubbles:true })); geoMsg(el, ''); });
+});
 try {
   render(
     mergeParsed([parseCampaignCSV(DEFAULT_CSV), parseCampaignCSV(DEFAULT_CSV_REGIONAL)]),
