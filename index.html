@@ -1210,6 +1210,9 @@ function truncateText(ctx, text, maxWidth){
   .ue-grid .filter-select{width:100%; min-width:0; margin-top:4px;}
   .ue-grid .ue-chk{display:flex; align-items:center; gap:var(--sp-2); font-weight:400;}
   .nu-editando .ur-note,.nu-editando .nu-so-novo{display:none !important;}
+
+input.addr-lock{background:var(--bg-soft,rgba(127,127,127,.12));color:var(--txt-2,inherit);cursor:not-allowed}
+.nu-f select.addr-mun{width:100%}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 </head>
@@ -1692,8 +1695,8 @@ function truncateText(ctx, text, maxWidth){
 </section><section class="nu-step" data-step="1" hidden>
 <h3>Endereço do apoiador</h3>
 <div class="nu-grid">
-<label class="filter-label nu-f">CEP<input type="text" id="naCep" class="filter-select" placeholder="Ex: 68900-000" maxlength="120" ></label><label class="filter-label nu-f">Rua<input type="text" id="naRua" class="filter-select" placeholder="Ex: Rua das Flores" maxlength="120" ></label><label class="filter-label nu-f">Número<input type="text" id="naNumero" class="filter-select" placeholder="Ex: 123" maxlength="120" ></label>
-<label class="filter-label nu-f">Bairro<input type="text" id="naBairro" class="filter-select" placeholder="Ex: Jardim Felicidade" maxlength="120" list="nuBairroList"></label><label class="filter-label nu-f">Cidade<input type="text" id="naCidade" class="filter-select" placeholder="Ex: Macapá" maxlength="120" ></label><label class="filter-label nu-f">Estado<input type="text" id="naEstado" class="filter-select" placeholder="Ex: AP" maxlength="120" ></label>
+<label class="filter-label nu-f">Município (para comunidade sem CEP)<select id="naMun" class="filter-select addr-mun"></select></label><label class="filter-label nu-f">CEP<input type="text" id="naCep" class="filter-select" placeholder="Ex: 68900-000" maxlength="120" ></label><label class="filter-label nu-f">Rua<input type="text" id="naRua" class="filter-select" placeholder="Ex: Rua das Flores" maxlength="120" ></label><label class="filter-label nu-f">Número<input type="text" id="naNumero" class="filter-select" placeholder="Ex: 123" maxlength="120" ></label>
+<label class="filter-label nu-f">Bairro ou comunidade<input type="text" id="naBairro" class="filter-select" placeholder="Ex: Jardim Felicidade ou nome da comunidade" maxlength="120" list="nuBairroList"></label><label class="filter-label nu-f">Cidade<input type="text" id="naCidade" class="filter-select" placeholder="Ex: Macapá" maxlength="120" ></label><label class="filter-label nu-f">Estado<input type="text" id="naEstado" class="filter-select" placeholder="Ex: AP" maxlength="120" ></label>
 <label class="filter-label nu-f">País<input type="text" id="naPais" class="filter-select" placeholder="Ex: Brasil" maxlength="120" ></label><label class="filter-label nu-f">Complemento<input type="text" id="naCompl" class="filter-select" placeholder="Ex: Apto 101" maxlength="120" ></label>
 </div>
 <h3>Sede de fiscalização</h3>
@@ -1867,8 +1870,8 @@ function truncateText(ctx, text, maxWidth){
 </section><section class="nu-step" data-step="1" hidden>
 <h3>Endereço do usuário</h3>
 <div class="nu-grid">
-<label class="filter-label nu-f">CEP<input type="text" id="nuCep" class="filter-select" placeholder="Ex: 68900-000" maxlength="120" ></label><label class="filter-label nu-f">Rua<input type="text" id="nuRua" class="filter-select" placeholder="Ex: Rua das Flores" maxlength="120" ></label><label class="filter-label nu-f">Número<input type="text" id="nuNumero" class="filter-select" placeholder="Ex: 123" maxlength="120" ></label>
-<label class="filter-label nu-f">Bairro<input type="text" id="nuBairro" class="filter-select" placeholder="Ex: Jardim Felicidade" maxlength="120" list="nuBairroList"></label><label class="filter-label nu-f">Cidade<input type="text" id="nuCidade" class="filter-select" placeholder="Ex: Macapá" maxlength="120" ></label><label class="filter-label nu-f">Estado<input type="text" id="nuEstado" class="filter-select" placeholder="Ex: AP" maxlength="120" ></label>
+<label class="filter-label nu-f">Município (para comunidade sem CEP)<select id="nuMun" class="filter-select addr-mun"></select></label><label class="filter-label nu-f">CEP<input type="text" id="nuCep" class="filter-select" placeholder="Ex: 68900-000" maxlength="120" ></label><label class="filter-label nu-f">Rua<input type="text" id="nuRua" class="filter-select" placeholder="Ex: Rua das Flores" maxlength="120" ></label><label class="filter-label nu-f">Número<input type="text" id="nuNumero" class="filter-select" placeholder="Ex: 123" maxlength="120" ></label>
+<label class="filter-label nu-f">Bairro ou comunidade<input type="text" id="nuBairro" class="filter-select" placeholder="Ex: Jardim Felicidade ou nome da comunidade" maxlength="120" list="nuBairroList"></label><label class="filter-label nu-f">Cidade<input type="text" id="nuCidade" class="filter-select" placeholder="Ex: Macapá" maxlength="120" ></label><label class="filter-label nu-f">Estado<input type="text" id="nuEstado" class="filter-select" placeholder="Ex: AP" maxlength="120" ></label>
 <label class="filter-label nu-f">País<input type="text" id="nuPais" class="filter-select" placeholder="Ex: Brasil" maxlength="120" ></label><label class="filter-label nu-f">Complemento<input type="text" id="nuCompl" class="filter-select" placeholder="Ex: Apto 101" maxlength="120" ></label>
 </div>
 <h3>Sede de fiscalização</h3>
@@ -2297,6 +2300,7 @@ function truncateText(ctx, text, maxWidth){
         cache.segmentos = (await todas('segmentos')).map(function(r){ return { key:r.nome_chave, nome:r.nome, desc:r.descricao || '', custom:!!r.custom }; });
         try { var cf = await DB.client.from('config_painel').select('chave,dados'); if(cf.error) throw cf.error; cf.data.forEach(function(r){ cache.cfg[r.chave] = r.dados; }); } catch(e){ cache.cfgOff = true; }
         try { var ev = await DB.client.from('eventos').select('dados'); if(!ev.error) cache.eventos = ev.data.map(function(r){ return r.dados; }); } catch(e){}
+        try { var lc = await DB.client.from('localidades').select('municipio,nome'); if(!lc.error) cache.localidades = lc.data; } catch(e){}
         try { var dm = await DB.client.from('demandas').select('dados'); if(!dm.error) cache.demandas = dm.data.map(function(r){ return r.dados; }); } catch(e){}
         var im = await DB.client.from('importacoes').select('dados').order('criado_em', { ascending:false }).limit(50);
         if(im.error) throw im.error; cache.importacoes = im.data.map(function(r){ return r.dados; });
@@ -4231,11 +4235,11 @@ async function cepBuscar(pref){
     const ctl = new AbortController(), tm = setTimeout(() => ctl.abort(), 8000);
     const r = await fetch('https://viacep.com.br/ws/' + d + '/json/', { signal:ctl.signal }); clearTimeout(tm);
     const j = await r.json(); if(!r.ok || j.erro) throw new Error('CEP não encontrado');
-    const set = (k, v) => { const e = document.getElementById(A[k]); if(e && v){ e.value = v; e.dispatchEvent(new Event('input', { bubbles:true })); } };
+    const set = (k, v) => { const e = document.getElementById(A[k]); if(e && (v || k === 'rua')){ e.value = v || ''; e.dispatchEvent(new Event('input', { bubbles:true })); } };
     set('rua', j.logradouro); set('bairro', j.bairro); set('cidade', j.localidade); set('estado', j.uf); set('pais', 'Brasil');
     const c = document.getElementById(A.compl); if(c && !c.value && j.complemento) c.value = j.complemento;
     ['bairro', 'cidade'].forEach(k => { const e = document.getElementById(A[k]); if(e) geoChecar(e, k); });
-    msg(j.logradouro ? 'Endereço preenchido. Confira e informe o número.' : 'CEP geral da cidade: preencha rua e bairro.');
+    msg(j.logradouro ? 'Endereço preenchido. Confira e informe o número.' : 'CEP geral do município: informe só o bairro ou a comunidade.');
     const n = document.getElementById(A.num); if(n && j.logradouro) n.focus();
   } catch(e){ cepUlt[pref] = null; msg(e.message === 'CEP não encontrado' ? 'CEP não encontrado. Preencha o endereço manualmente.' : 'Não foi possível buscar o CEP agora (sem internet?). Preencha manualmente.', true); }
 }
@@ -4322,6 +4326,72 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   document.addEventListener('click', e => { const b = e.target.closest('[data-geouse]'); if(!b) return; const el = document.getElementById(b.dataset.geoid); el.value = b.dataset.geouse; el.dispatchEvent(new Event('input', { bubbles:true })); geoMsg(el, ''); });
 });
+
+/* ===== Endereço padronizado: CEP preenche e trava; comunidades vão no Bairro ===== */
+const AP_MUN = {"Amapá": {"cep": "68950-000", "loc": ["Sucuriju", "Região dos Lagos"]}, "Calçoene": {"cep": "68960-000", "loc": ["Cunani", "Lourenço", "PDS Irineu e Felipe"]}, "Cutias": {"cep": "68973-000", "loc": ["Cutias do Araguari"]}, "Ferreira Gomes": {"cep": "68915-000", "loc": ["Igarapé do Palha"]}, "Itaubal": {"cep": "68976-000", "loc": ["Piririm"]}, "Laranjal do Jari": {"cep": "68920-000", "loc": ["São José", "São Francisco do Iratapuru", "PAE Maracá", "RESEX Rio Cajari", "Água Branca do Cajari"]}, "Macapá": {"cep": "68900-000", "loc": ["Bailique", "Vila Progresso (Bailique)", "Livramento (Bailique)", "Macedônia (Bailique)", "Arraiol (Bailique)", "Brigue (Bailique)", "Carapanatuba", "São Joaquim do Pacuí", "Curiaú", "Conceição do Macacoari", "Mel da Pedreira", "Pedreira do Abacate"]}, "Mazagão": {"cep": "68940-000", "loc": ["Mazagão Velho", "Vila Nova", "Carvão", "Maracá", "RESEX Rio Cajari"]}, "Oiapoque": {"cep": "68980-000", "loc": ["Kumarumã", "Kumenê", "Manga", "Espírito Santo", "Mariry", "Clevelândia do Norte", "Vila Velha do Cassiporé", "Kulumbu do Patuazinho", "Vila Brasil"]}, "Pedra Branca do Amaparí": {"cep": "68945-000", "loc": ["Novo Canaã"]}, "Porto Grande": {"cep": "68997-000", "loc": []}, "Pracuúba": {"cep": "68918-000", "loc": []}, "Santana": {"cep": "68925-000", "loc": ["São Raimundo da Pirativa", "Ilha de Santana"]}, "Serra do Navio": {"cep": "68948-000", "loc": []}, "Tartarugalzinho": {"cep": "68990-000", "loc": ["São Tomé do Aporema"]}, "Vitória do Jari": {"cep": "68924-000", "loc": []}};
+function apMunDe(nome){ const k = normKey(nome || ''); return Object.keys(AP_MUN).find(m => normKey(m) === k) || null; }
+function apMunPorCep(d){ return Object.keys(AP_MUN).find(m => AP_MUN[m].cep.replace(/\D/g, '') === d) || null; }
+function apLocExtra(){ try { return (window.__DB && __DB.cache && __DB.cache.localidades) || []; } catch(e){ return []; } }
+function apBairrosDe(mun){
+  const out = new Map(), put = s => { s = (s || '').trim(); const k = normKey(s); if(k && !out.has(k)) out.set(k, s); };
+  ((AP_MUN[mun] || {}).loc || []).forEach(put);
+  try { ((MUNICIPIO_BAIRRO_MAP.cidadeToBairros || {})[mun] || []).forEach(put); } catch(e){}
+  apLocExtra().filter(x => x.municipio === mun).forEach(x => put(x.nome));
+  return [...out.values()].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+}
+(function(){ const _gc = geoCatalogo; let mesclado = false;
+  geoCatalogo = function(){
+    if(!mesclado){ mesclado = true;
+      try { const m = MUNICIPIO_BAIRRO_MAP; Object.keys(AP_MUN).forEach(mun => { (m.cidadeToBairros[mun] = m.cidadeToBairros[mun] || []);
+        AP_MUN[mun].loc.forEach(b => { if(!m.cidadeToBairros[mun].some(x => normKey(x) === normKey(b))) m.cidadeToBairros[mun].push(b);
+          const kb = normKey(b); (m.bairroToCidades[kb] = m.bairroToCidades[kb] || []); if(m.bairroToCidades[kb].indexOf(mun) < 0) m.bairroToCidades[kb].push(mun); }); }); } catch(e){}
+    }
+    return _gc();
+  };
+})();
+const addrLivre = {}, addrUlt = {};
+function addrLimpa(pref){ const A = CEP_ALVOS[pref]; ['rua', 'cidade', 'estado', 'pais'].forEach(k => { const e = document.getElementById(A[k]); if(e) e.value = ''; }); addrUlt[pref] = null; }
+function addrSync(pref){
+  const A = CEP_ALVOS[pref], g = k => document.getElementById(A[k]); const cep = g('cep'); if(!cep) return;
+  const ok = !addrLivre[pref] && cep.value.replace(/\D/g, '').length === 8 && !!(g('cidade').value || '').trim();
+  ['rua', 'cidade', 'estado', 'pais'].forEach(k => { const e = g(k); if(!e) return; e.readOnly = ok; e.classList.toggle('addr-lock', ok); if(ok) e.setAttribute('aria-readonly', 'true'); else e.removeAttribute('aria-readonly'); });
+  const m = document.getElementById(pref + 'Mun'); if(m) m.value = apMunDe(g('cidade').value) || '';
+}
+function addrPos(pref){
+  const A = CEP_ALVOS[pref], g = k => document.getElementById(A[k]), cep = g('cep'); if(!cep) return;
+  const d = cep.value.replace(/\D/g, '');
+  if(d.length === 8 && !(g('cidade').value || '').trim()){
+    const mun = apMunPorCep(d);
+    if(mun){ g('rua').value = ''; g('cidade').value = mun; g('estado').value = 'AP'; g('pais').value = 'Brasil';
+      const mg = document.getElementById(A.cep + 'Msg'); if(mg){ mg.style.color = ''; mg.textContent = 'CEP geral de ' + mun + '. Informe só o bairro ou a comunidade.'; } }
+    else if(cepUlt[pref] === null){ addrLivre[pref] = true; }
+  }
+  addrSync(pref);
+}
+(function(){ const _cb = cepBuscar; cepBuscar = async function(pref){
+    const cepEl = document.getElementById(CEP_ALVOS[pref].cep), d = cepEl ? cepEl.value.replace(/\D/g, '') : '';
+    await _cb(pref);
+    if(d.length === 8 && cepUlt[pref] === null && addrUlt[pref] && addrUlt[pref] !== d) addrLimpa(pref);
+    addrPos(pref);
+    if(d.length === 8 && (document.getElementById(CEP_ALVOS[pref].cidade).value || '').trim()) addrUlt[pref] = d;
+  }; })();
+document.addEventListener('DOMContentLoaded', () => {
+  Object.keys(CEP_ALVOS).forEach(pref => {
+    const A = CEP_ALVOS[pref], cep = document.getElementById(A.cep), bai = document.getElementById(A.bairro); if(!cep) return;
+    const sel = document.getElementById(pref + 'Mun');
+    if(sel){ sel.innerHTML = '<option value="">Comunidade sem CEP? Escolha o município</option>' + Object.keys(AP_MUN).map(m => '<option value="' + escapeHtml(m) + '">' + escapeHtml(m) + ' (' + AP_MUN[m].cep + ')</option>').join('');
+      sel.addEventListener('change', () => { const m = sel.value; if(!m) return; addrLivre[pref] = false; cepUlt[pref] = null; cep.value = AP_MUN[m].cep; cep.dispatchEvent(new Event('input', { bubbles:true })); }); }
+    cep.addEventListener('input', () => { addrLivre[pref] = false; if(cep.value.replace(/\D/g, '').length < 8 && addrUlt[pref]) addrLimpa(pref); addrSync(pref); });
+    if(bai) bai.addEventListener('focus', () => { const dl = document.getElementById('nuBairroList'); const mun = apMunDe(document.getElementById(A.cidade).value);
+      if(dl && mun) dl.innerHTML = apBairrosDe(mun).map(c => '<option value="' + escapeHtml(c) + '">').join(''); }, true);
+  });
+  document.addEventListener('reset', () => setTimeout(() => { addrLivre.nu = addrLivre.na = false; addrSync('nu'); addrSync('na'); }, 0), true);
+});
+(function(){
+  const _ea = usEditarAbrir; usEditarAbrir = function(){ const r = _ea.apply(this, arguments); addrLivre.nu = false; addrSync('nu'); return r; };
+  const _se = nuSairEdicao; nuSairEdicao = function(){ const r = _se.apply(this, arguments); addrLivre.nu = false; addrSync('nu'); return r; };
+  const _rr = rcRestaurar; rcRestaurar = function(p){ const r = _rr.apply(this, arguments); addrSync(p); return r; };
+})();
 try {
   render(
     mergeParsed([parseCampaignCSV(DEFAULT_CSV), parseCampaignCSV(DEFAULT_CSV_REGIONAL)]),
