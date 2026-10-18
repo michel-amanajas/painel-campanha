@@ -2408,6 +2408,7 @@ h1,h2,h3,.masthead h1{font-family:var(--f-display)}
       var f = document.getElementById('dbLoginForm');
       f.querySelector('h1').textContent = 'Crie sua senha';
       f.querySelector('p').textContent = 'Seu e-mail foi confirmado (' + (user.email || '') + '). Defina uma senha para acessar o painel.';
+      if(user.user_metadata && user.user_metadata.trocar_senha) f.querySelector('p').textContent = 'Por segurança, troque a senha provisória por uma senha só sua.';
       document.getElementById('dbEmail').style.display = 'none'; f.querySelector('label[for=dbEmail]').style.display = 'none';
       f.querySelector('label[for=dbSenha]').textContent = 'Nova senha (mínimo 8 caracteres)';
       document.getElementById('dbSenha').autocomplete = 'new-password';
@@ -2423,7 +2424,7 @@ h1,h2,h3,.masthead h1{font-family:var(--f-display)}
       if(a !== b) return msg('As duas senhas não são iguais.');
       btn.disabled = true; msg('Salvando...', true);
       try {
-        var r = await DB.client.auth.updateUser({ password:a }); if(r.error) throw r.error;
+        var r = await DB.client.auth.updateUser({ password:a, data:{ trocar_senha:false } }); if(r.error) throw r.error;
         try { history.replaceState(null, '', location.pathname); } catch(e){}
         DB.modoSenha = false; await carregarTudo(DB.novoUser);
       } catch(e){ msg(/different from the old/i.test(e.message || '') ? 'Escolha uma senha diferente da anterior.' : (e.message || String(e))); btn.disabled = false; }
@@ -2434,7 +2435,7 @@ h1,h2,h3,.masthead h1{font-family:var(--f-display)}
         DB.client = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY, { auth:{ persistSession:true, autoRefreshToken:true } });
         if(CONV_ERR){ msg('O link do convite venceu ou já foi usado. Peça um novo convite ao administrador, ou entre com seu e-mail e senha.'); return; }
         var s = await DB.client.auth.getSession();
-        if(s.data && s.data.session){ if(CONV) criarSenha(s.data.session.user); else await carregarTudo(s.data.session.user); }
+        if(s.data && s.data.session){ var su = s.data.session.user; if(CONV || (su.user_metadata && su.user_metadata.trocar_senha)) criarSenha(su); else await carregarTudo(su); }
         else if(CONV) msg('Link inválido ou vencido. Peça um novo convite ao administrador.');
       } catch(e){ msg(e.message || String(e)); }
     }
@@ -2449,6 +2450,7 @@ h1,h2,h3,.masthead h1{font-family:var(--f-display)}
         if(!DB.client) DB.client = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY, { auth:{ persistSession:true, autoRefreshToken:true } });
         var r = await DB.client.auth.signInWithPassword({ email:email, password:senha });
         if(r.error) throw new Error(/invalid/i.test(r.error.message) ? 'E-mail ou senha incorretos.' : r.error.message);
+        if(r.data.user && r.data.user.user_metadata && r.data.user.user_metadata.trocar_senha){ criarSenha(r.data.user); b.disabled = false; return; }
         await carregarTudo(r.data.user);
       } catch(e){ msg(e.message || String(e)); b.disabled = false; }
     });
@@ -4616,6 +4618,55 @@ regionalDadosAtuais = function(){
       (m.cidadeToBairros[c] = m.cidadeToBairros[c] || []); if(!m.cidadeToBairros[c].some(x => normKey(x) === kb)) m.cidadeToBairros[c].push(b); } });
   return parseCampaignCSV(txt);
 };
+
+/* ===== Convite sem e-mail: acesso manual para enviar pelo WhatsApp ===== */
+function senhaProvisoria(){ const al = 'abcdefghjkmnpqrstuvwxyz23456789', a = new Uint8Array(10); crypto.getRandomValues(a); return Array.from(a, b => al[b % al.length]).join('') + 'A9'; }
+async function usAcessoManual(reg){
+  const papelDb = reg.papel === 'Administrador' ? 'administrador' : reg.papel === 'Coordenador' ? 'coordenador' : 'lider';
+  if(__DB.cache.perfil && __DB.cache.perfil.papel === 'coordenador' && papelDb !== 'lider') throw new Error('Coordenadores só criam acesso de líder. Peça ao administrador para criar este acesso.');
+  const t = await dbClienteTemp(), senha = senhaProvisoria();
+  const r = await t.auth.signUp({ email:reg.email, password:senha, options:{ data:{ nome:reg.nome, trocar_senha:true } } });
+  const ligado = 'O Supabase ainda está com "Confirm email" ligado. Desligue em Authentication › Sign In / Providers › Email › Confirm email, salve e tente de novo. Se esta conta já foi criada, apague-a em Authentication › Users antes.';
+  if(r.error){ if(/sending|confirmation|rate limit|too many/i.test(r.error.message || '')) throw new Error(ligado); throw r.error; }
+  const u = r.data.user; if(!u) throw new Error('o banco não devolveu o usuário criado');
+  if(u.identities && u.identities.length === 0) throw new Error('Esse e-mail já tem conta. Para dar uma nova senha a ele, use Authentication › Users no Supabase.');
+  if(!r.data.session) throw new Error(ligado);
+  const c = await dbCliente();
+  let p = await c.from('perfis').upsert({ id:u.id, nome:reg.nome, papel:papelDb, ativo:true, meta:Number(reg.meta) > 0 ? Number(reg.meta) : 20 }, { onConflict:'id' });
+  if(p.error && /meta/i.test(p.error.message || '')) p = await c.from('perfis').upsert({ id:u.id, nome:reg.nome, papel:papelDb, ativo:true }, { onConflict:'id' });
+  if(p.error) throw new Error('o perfil de acesso não foi criado (' + p.error.message + '). Rode o SQL da Fase 4 no Supabase');
+  const link = urlUsuarios() + (papelDb === 'lider' ? '' : 'admin.html'), nome1 = String(reg.nome || '').trim().split(/\s+/)[0] || '';
+  const texto = 'Olá, ' + nome1 + '! Seu acesso ao painel da campanha:\n' + link + '\nE-mail: ' + reg.email + '\nSenha provisória: ' + senha + '\nNo primeiro acesso você cria uma senha só sua.';
+  return { texto, senha, link };
+}
+function usDlgConviteFalha(reg){
+  let d = document.getElementById('convManualDlg'); if(d) d.remove();
+  d = document.createElement('dialog'); d.id = 'convManualDlg'; d.className = 'up-dlg';
+  d.innerHTML = '<h3>O e-mail de convite não saiu</h3><p class="vg-sub" id="cmTxt">O Supabase não conseguiu enviar o e-mail para <b>' + escapeHtml(reg.email || '') + '</b>. Você pode gerar o acesso agora e mandar os dados pelo WhatsApp.</p>' +
+    '<textarea id="cmSaida" readonly rows="6" hidden style="width:100%;margin-top:10px"></textarea>' +
+    '<div class="nu-nav" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px"><button type="button" class="us-btn us-btn--primary" id="cmGerar">Gerar acesso para o WhatsApp</button>' +
+    '<button type="button" class="us-btn" id="cmCopiar" hidden>Copiar mensagem</button><button type="button" class="us-btn" id="cmWpp" hidden>Abrir WhatsApp</button><button type="button" class="us-btn" id="cmFechar">Fechar</button></div>';
+  document.body.appendChild(d); if(d.showModal) d.showModal(); else d.setAttribute('open', '');
+  const $ = id => document.getElementById(id);
+  $('cmFechar').onclick = () => d.close ? d.close() : d.removeAttribute('open');
+  $('cmGerar').onclick = async () => {
+    const b = $('cmGerar'); b.disabled = true; $('cmTxt').textContent = 'Gerando o acesso…';
+    try {
+      const r = await usAcessoManual(reg);
+      $('cmTxt').textContent = 'Acesso criado. Envie a mensagem abaixo para ' + (reg.nome || 'o usuário') + ' (a senha só aparece aqui, agora).';
+      const sa = $('cmSaida'); sa.hidden = false; sa.value = r.texto; b.hidden = true; $('cmCopiar').hidden = false;
+      $('cmCopiar').onclick = () => upCopiar(r.texto, 'Mensagem copiada.');
+      const fone = String(reg.telefone || reg.whatsapp || '').replace(/\D/g, '');
+      if(fone.length >= 10){ $('cmWpp').hidden = false; $('cmWpp').onclick = () => window.open('https://wa.me/' + (fone.length <= 11 ? '55' + fone : fone) + '?text=' + encodeURIComponent(r.texto), '_blank', 'noopener'); }
+      try { usHistAdd(personKey(reg.nome), 'Acesso gerado para envio manual'); } catch(e){}
+    } catch(e){ $('cmTxt').textContent = 'Não foi possível gerar o acesso: ' + (e.message || e); b.disabled = false; }
+  };
+}
+(function(){ const _o = usEnviarConvite;
+  usEnviarConvite = async function(reg){ const r = await _o.apply(this, arguments);
+    if(!r.ok && !r.aviso && /sending|email|rate limit|too many|not authorized|not allowed|smtp/i.test(r.msg || '')) setTimeout(() => usDlgConviteFalha(reg), 50);
+    return r; };
+})();
 try {
   render(
     mergeParsed([parseCampaignCSV(DEFAULT_CSV), parseCampaignCSV(DEFAULT_CSV_REGIONAL)]),
